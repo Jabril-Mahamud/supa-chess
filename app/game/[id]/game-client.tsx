@@ -5,18 +5,33 @@ import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
 import ChessBoard from "@/components/chess/ChessBoard";
 
-export default function GameClient({
-  gameId,
-  game: initialGame,
-  userId,
-}: {
+// Define a proper type for the game object based on the actual database schema
+export type Game = {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  white_player: string | null;
+  black_player: string | null;
+  current_position: string;
+  status: 'waiting' | 'active' | 'resigned' | 'completed';
+  winner: string | null;
+  turn: 'w' | 'b';
+  white_conversion_done: boolean;
+  black_conversion_done: boolean;
+  last_conversion: string | null;
+};
+
+// Define explicit props interface for GameClient component
+export interface GameClientProps {
   gameId: string;
-  game: any;
+  game: Game;
   userId: string;
-}) {
+}
+
+export default function GameClient({ gameId, game: initialGame, userId }: GameClientProps) {
   const supabase = createClient();
   const router = useRouter();
-  const [game, setGame] = useState(initialGame);
+  const [game, setGame] = useState<Game>(initialGame);
 
   useEffect(() => {
     console.log("Setting up realtime for game:", gameId);
@@ -31,7 +46,7 @@ export default function GameClient({
 
       if (!error && data) {
         console.log("Fresh game data:", data);
-        setGame(data);
+        setGame(data as Game);
       }
     };
 
@@ -50,7 +65,7 @@ export default function GameClient({
         },
         (payload) => {
           console.log("Game update received:", payload.new);
-          setGame(payload.new);
+          setGame(payload.new as Game);
         }
       )
       .subscribe((status) => {
@@ -62,13 +77,12 @@ export default function GameClient({
     };
   }, [gameId, supabase]);
 
-  const getPlayerRole = () => {
+  const getPlayerRole = (): "w" | "b" | undefined => {
     if (game.white_player === userId) return "w";
     if (game.black_player === userId) return "b";
-    return undefined; // Fixed
+    return undefined;
   };
 
-  // In app/game/[id]/game-client.tsx
   const handleJoinGame = async () => {
     // Determine which role the user should take
     const role = !game.white_player ? "white_player" : "black_player";
@@ -114,6 +128,7 @@ export default function GameClient({
             game.white_player === userId
               ? game.black_player
               : game.white_player,
+          updated_at: new Date().toISOString(),
         })
         .eq("id", gameId);
 
@@ -135,6 +150,7 @@ export default function GameClient({
       <div className="bg-accent p-4 rounded">
         <h2 className="text-lg font-semibold mb-2">Game Information</h2>
         <p>Status: {game.status}</p>
+        <p>Current Turn: {game.turn === 'w' ? 'White' : 'Black'}</p>
         <p>
           White Player:{" "}
           {game.white_player
@@ -171,7 +187,12 @@ export default function GameClient({
         )}
       </div>
 
-      <ChessBoard gameId={gameId} userId={userId} playerColor={playerRole} />
+      {/* Only pass the props that ChessBoard expects */}
+      <ChessBoard 
+        gameId={gameId} 
+        userId={userId} 
+        playerColor={playerRole} 
+      />
     </div>
   );
 }
