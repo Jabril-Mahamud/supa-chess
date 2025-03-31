@@ -7,7 +7,7 @@ import Link from "next/link";
 import Image from "next/image";
 import "./globals.css";
 import { Linkedin } from "lucide-react";
-import Logo from "@/public/ChatGPT Image Mar 31, 2025, 06_47_59 AM.png";
+import Logo from "@/public/SupaChessLogo.png";
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
