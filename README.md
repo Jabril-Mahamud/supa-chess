@@ -1,104 +1,115 @@
-<a href="https://demo-nextjs-with-supabase.vercel.app/">
-  <img alt="Next.js and Supabase Starter Kit - the fastest way to build apps with Next.js and Supabase" src="https://demo-nextjs-with-supabase.vercel.app/opengraph-image.png">
-  <h1 align="center">Next.js and Supabase Starter Kit</h1>
-</a>
+# Supa Chess
 
-<p align="center">
- The fastest way to build apps with Next.js and Supabase
-</p>
-
-<p align="center">
-  <a href="#features"><strong>Features</strong></a> ·
-  <a href="#demo"><strong>Demo</strong></a> ·
-  <a href="#deploy-to-vercel"><strong>Deploy to Vercel</strong></a> ·
-  <a href="#clone-and-run-locally"><strong>Clone and run locally</strong></a> ·
-  <a href="#feedback-and-issues"><strong>Feedback and issues</strong></a>
-  <a href="#more-supabase-examples"><strong>More Examples</strong></a>
-</p>
-<br/>
+A real-time multiplayer chess application with a unique twist built with Next.js, React, and Supabase.
 
 ## Features
 
-- Works across the entire [Next.js](https://nextjs.org) stack
-  - App Router
-  - Pages Router
-  - Middleware
-  - Client
-  - Server
-  - It just works!
-- supabase-ssr. A package to configure Supabase Auth to use cookies
-- Styling with [Tailwind CSS](https://tailwindcss.com)
-- Components with [shadcn/ui](https://ui.shadcn.com/)
-- Optional deployment with [Supabase Vercel Integration and Vercel deploy](#deploy-your-own)
-  - Environment variables automatically assigned to Vercel project
+- **Real-time Multiplayer Chess**: Play chess with others in real-time using Supabase's real-time capabilities
+- **Special "Conversion" Rule**: When a player loses 8 pieces, they can convert one random enemy piece to their side (excluding the king)
+- **Turn Skipping**: Strategic option to skip a turn
+- **Move History**: Complete history of all moves made in the game
+- **Game State Persistence**: Games are saved in the database and can be resumed
+- **Spectator Mode**: Watch games without participating
 
-## Demo
+## Tech Stack
 
-You can view a fully working demo at [demo-nextjs-with-supabase.vercel.app](https://demo-nextjs-with-supabase.vercel.app/).
+- **Frontend**: Next.js, React, TypeScript
+- **UI Components**: Custom chess board using react-chessboard
+- **Game Logic**: chess.js for move validation and game state management
+- **Backend/Database**: Supabase (PostgreSQL)
+- **Real-time Communication**: Supabase Realtime
 
-## Deploy to Vercel
+## Special Rules
 
-Vercel deployment will guide you through creating a Supabase account and project.
+This chess variant includes unique gameplay mechanics:
 
-After installation of the Supabase integration, all relevant environment variables will be assigned to the project so the deployment is fully functioning.
+1. **Piece Conversion**:
+   - When a player loses 8 pieces, they can automatically convert one random enemy piece to their side
+   - Converted pieces maintain their position but change allegiance
+   - Kings cannot be converted
+   - Each player can only perform one conversion per game
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&project-name=nextjs-with-supabase&repository-name=nextjs-with-supabase&demo-title=nextjs-with-supabase&demo-description=This+starter+configures+Supabase+Auth+to+use+cookies%2C+making+the+user%27s+session+available+throughout+the+entire+Next.js+app+-+Client+Components%2C+Server+Components%2C+Route+Handlers%2C+Server+Actions+and+Middleware.&demo-url=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2F&external-id=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&demo-image=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2Fopengraph-image.png)
+2. **Turn Skipping**:
+   - Players have the option to skip their turn
+   - This can be used strategically to force the opponent to make moves
 
-The above will also clone the Starter kit to your GitHub, you can clone that locally and develop locally.
+## Installation
 
-If you wish to just develop locally and not deploy to Vercel, [follow the steps below](#clone-and-run-locally).
-
-## Clone and run locally
-
-1. You'll first need a Supabase project which can be made [via the Supabase dashboard](https://database.new)
-
-2. Create a Next.js app using the Supabase Starter template npx command
-
+1. Clone the repository:
    ```bash
-   npx create-next-app --example with-supabase with-supabase-app
+   git clone https://github.com/yourusername/supa-chess.git
+   cd supa-chess
    ```
 
+2. Install dependencies:
    ```bash
-   yarn create next-app --example with-supabase with-supabase-app
+   npm install
    ```
 
-   ```bash
-   pnpm create next-app --example with-supabase with-supabase-app
+3. Set up environment variables:
+   Create a `.env.local` file with your Supabase credentials:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
 
-3. Use `cd` to change into the app's directory
-
-   ```bash
-   cd with-supabase-app
-   ```
-
-4. Rename `.env.example` to `.env.local` and update the following:
-
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=[INSERT SUPABASE PROJECT URL]
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=[INSERT SUPABASE PROJECT API ANON KEY]
-   ```
-
-   Both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` can be found in [your Supabase project's API settings](https://app.supabase.com/project/_/settings/api)
-
-5. You can now run the Next.js local development server:
-
+4. Run the development server:
    ```bash
    npm run dev
    ```
 
-   The starter kit should now be running on [localhost:3000](http://localhost:3000/).
+5. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-6. This template comes with the default shadcn/ui style initialized. If you instead want other ui.shadcn styles, delete `components.json` and [re-install shadcn/ui](https://ui.shadcn.com/docs/installation/next)
+## Database Schema
 
-> Check out [the docs for Local Development](https://supabase.com/docs/guides/getting-started/local-development) to also run Supabase locally.
+The application uses the following tables in Supabase:
 
-## Feedback and issues
+### `games` Table
+- `id`: UUID (primary key)
+- `white_player`: UUID (foreign key to users)
+- `black_player`: UUID (foreign key to users)
+- `current_position`: String (FEN notation)
+- `turn`: String ('w' or 'b')
+- `status`: String ('active', 'completed', 'draw', 'resigned')
+- `winner`: UUID (foreign key to users, nullable)
+- `white_conversion_done`: Boolean
+- `black_conversion_done`: Boolean
+- `last_conversion`: String (nullable)
+- `created_at`: Timestamp
+- `updated_at`: Timestamp
 
-Please file feedback and issues over on the [Supabase GitHub org](https://github.com/supabase/supabase/issues/new/choose).
+### `moves` Table
+- `id`: UUID (primary key)
+- `game_id`: UUID (foreign key to games)
+- `user_id`: UUID (foreign key to users)
+- `move_notation`: String
+- `position_after`: String (FEN notation)
+- `created_at`: Timestamp
 
-## More Supabase examples
+## Component Architecture
 
-- [Next.js Subscription Payments Starter](https://github.com/vercel/nextjs-subscription-payments)
-- [Cookie-based Auth and the Next.js 13 App Router (free course)](https://youtube.com/playlist?list=PL5S4mPUpp4OtMhpnp93EFSo42iQ40XjbF)
-- [Supabase Auth and the Next.js App Router](https://github.com/supabase/supabase/tree/master/examples/auth/nextjs)
+The main chess component is composed of:
+
+- `ChessBoard`: Main component for the chessboard UI and game logic
+- Supabase client for real-time communication and database access
+- react-chessboard for visual representation
+- chess.js for move validation and game state tracking
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add some amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgements
+
+- [react-chessboard](https://github.com/Clariity/react-chessboard) for the chessboard UI
+- [chess.js](https://github.com/jhlywa/chess.js) for chess logic
+- [Supabase](https://supabase.com) for backend and real-time capabilities
+- [Next.js](https://nextjs.org) for the React framework
