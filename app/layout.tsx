@@ -4,8 +4,11 @@ import { hasEnvVars } from "@/utils/supabase/check-env-vars";
 import { Geist } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import Link from "next/link";
+import Image from "next/image";
 import "./globals.css";
 import { Linkedin } from "lucide-react";
+import Logo from "@/public/ChatGPT Image Mar 31, 2025, 06_47_59 AM.png";
+
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
   : "http://localhost:3000";
@@ -16,10 +19,12 @@ export const metadata = {
   description:
     "A real-time multiplayer chess application with unique conversion mechanics",
 };
+
 const geistSans = Geist({
   display: "swap",
   subsets: ["latin"],
 });
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -55,22 +60,17 @@ export default function RootLayout({
                 {children}
               </div>
 
-              {/* Updated Footer */}
+              {/* Updated Footer with Logo */}
               <footer className="w-full border-t border-t-foreground/10 py-6">
                 <div className="max-w-5xl mx-auto px-5 flex flex-col md:flex-row items-center justify-between gap-4">
                   <div className="flex items-center gap-2">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="w-5 h-5"
-                    >
-                      <path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z"></path>
-                    </svg>
+                    <Image 
+                      src={Logo} 
+                      alt="Supa Chess Logo" 
+                      width={24} 
+                      height={24} 
+                      className="w-6 h-6"
+                    />
                     <span className="text-sm">
                       Supa Chess © {new Date().getFullYear()}
                     </span>

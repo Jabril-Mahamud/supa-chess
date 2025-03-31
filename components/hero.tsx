@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import NextLogo from "./next-logo";
 import SupabaseLogo from "./supabase-logo";
-import Logo from "@/public/ChatGPT Image Mar 29, 2025, 02_04_32 PM.png"
+import Logo from "@/public/ChatGPT Image Mar 31, 2025, 06_47_59 AM.png"
 
 export default function Hero() {
   return (
