@@ -4,6 +4,10 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from "@/utils/supabase/client";
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 
 export default function DashboardClient({ user }: { user: any }) {
   const supabase = createClient();
@@ -41,13 +45,12 @@ export default function DashboardClient({ user }: { user: any }) {
   return (
     <div className="space-y-6">
       <div>
-        <button
+        <Button
           onClick={handleCreateGame}
-          className="px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition"
           disabled={loading}
         >
           {loading ? 'Creating...' : 'Create New Game'}
-        </button>
+        </Button>
       </div>
       
       <GamesList userId={user.id} />
@@ -114,21 +117,80 @@ function GamesList({ userId }: { userId: string }) {
   }, [userId, supabase]);
   
   if (loading) {
-    return <div>Loading your games...</div>;
+    return <div className="py-4">Loading your games...</div>;
   }
   
   if (games.length === 0) {
-    return <div>You don't have any games yet. Create one to get started!</div>;
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          You don't have any games yet. Create one to get started!
+        </CardContent>
+      </Card>
+    );
   }
+  
+  // Filter games into active and completed
+  const activeGames = games.filter(game => 
+    game.status === 'active' || game.status === 'waiting'
+  );
+  
+  const completedGames = games.filter(game => 
+    game.status === 'completed' || game.status === 'draw' || game.status === 'resigned'
+  );
   
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Your Games</h2>
-      <div className="grid gap-4">
-        {games.map((game) => (
-          <GameCard key={game.id} game={game} userId={userId} />
-        ))}
-      </div>
+      
+      <Tabs defaultValue="active" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-4">
+          <TabsTrigger value="active">
+            Active Games
+            {activeGames.length > 0 && (
+              <Badge variant="secondary" className="ml-2">{activeGames.length}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="completed">
+            Completed Games
+            {completedGames.length > 0 && (
+              <Badge variant="secondary" className="ml-2">{completedGames.length}</Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="active" className="mt-0">
+          {activeGames.length === 0 ? (
+            <Card>
+              <CardContent className="pt-6">
+                You don't have any active games. Create a new game to start playing!
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {activeGames.map((game) => (
+                <GameCard key={game.id} game={game} userId={userId} />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="completed" className="mt-0">
+          {completedGames.length === 0 ? (
+            <Card>
+              <CardContent className="pt-6">
+                You don't have any completed games yet.
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {completedGames.map((game) => (
+                <GameCard key={game.id} game={game} userId={userId} />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
@@ -139,13 +201,13 @@ function GameCard({ game, userId }: { game: any, userId: string }) {
       case 'waiting':
         return 'Waiting for opponent';
       case 'active':
-        return `${game.turn === 'w' ? 'White' : 'Black'}'s turn`;
+        return game.turn === 'w' ? 'White to move' : 'Black to move';
       case 'completed':
-        return 'Game completed';
+        return 'Checkmate';
       case 'draw':
-        return 'Game ended in draw';
+        return 'Draw';
       case 'resigned':
-        return 'Game resigned';
+        return 'Resigned';
       default:
         return 'Unknown status';
     }
@@ -156,20 +218,59 @@ function GameCard({ game, userId }: { game: any, userId: string }) {
     if (game.black_player === userId) return 'Black';
     return 'Spectator';
   };
+
+  const isYourTurn = () => {
+    if (game.status !== 'active') return false;
+    return (game.turn === 'w' && game.white_player === userId) || 
+           (game.turn === 'b' && game.black_player === userId);
+  };
+
+  const isGameOver = game.status === 'completed' || game.status === 'draw' || game.status === 'resigned';
+  
+  const didYouWin = isGameOver && game.winner === userId;
   
   return (
-    <div className="border rounded p-4 flex justify-between items-center">
-      <div>
-        <h3 className="font-medium">Game #{game.id.substring(0, 8)}</h3>
-        <p className="text-sm">{getGameStatus()}</p>
-        <p className="text-sm">You're playing as: {getPlayerRole()}</p>
-      </div>
-      <Link 
-        href={`/game/${game.id}`}
-        className="px-3 py-1 bg-secondary text-secondary-foreground rounded hover:bg-secondary/90 transition"
-      >
-        {game.status === 'waiting' ? 'Join Game' : 'View Game'}
-      </Link>
-    </div>
+    <Card className={`${isYourTurn() ? 'border-green-500 dark:border-green-700' : ''}`}>
+      <CardContent className="p-4 flex justify-between items-center">
+        <div>
+          <h3 className="font-medium">Game #{game.id.substring(0, 8)}</h3>
+          <div className="flex items-center gap-2 my-1">
+            <Badge 
+              variant={
+                game.status === 'waiting' ? 'secondary' : 
+                game.status === 'active' ? 'default' :
+                'outline'
+              }
+            >
+              {getGameStatus()}
+            </Badge>
+            
+            {isYourTurn() && (
+              <Badge variant="default" className="animate-pulse">Your Turn</Badge>
+            )}
+            
+            {didYouWin && (
+              <Badge variant="outline">You Won</Badge>
+            )}
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Playing as {getPlayerRole()}
+            {game.status !== 'waiting' && ' • '}
+            {game.status !== 'waiting' && new Date(game.updated_at).toLocaleDateString()}
+          </p>
+        </div>
+        
+        <Button 
+          asChild 
+          variant={isYourTurn() ? "default" : "secondary"}
+          size="sm"
+        >
+          <Link href={`/game/${game.id}`}>
+            {game.status === 'waiting' ? 'Join' : 
+             isYourTurn() ? 'Play' : 'View'}
+          </Link>
+        </Button>
+      </CardContent>
+    </Card>
   );
 }

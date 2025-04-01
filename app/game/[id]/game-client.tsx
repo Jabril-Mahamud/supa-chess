@@ -1,75 +1,63 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { createClient } from "@/utils/supabase/client";
-import { useRouter } from "next/navigation";
-import ChessBoard from "@/components/chess/ChessBoard";
-
-// Define a proper type for the game object based on the actual database schema
-export type Game = {
-  id: string;
-  created_at: string;
-  updated_at: string;
-  white_player: string | null;
-  black_player: string | null;
-  current_position: string;
-  status: 'waiting' | 'active' | 'resigned' | 'completed';
-  winner: string | null;
-  turn: 'w' | 'b';
-  white_conversion_done: boolean;
-  black_conversion_done: boolean;
-  last_conversion: string | null;
-};
-
-// Define explicit props interface for GameClient component
-export interface GameClientProps {
-  gameId: string;
-  game: Game;
-  userId: string;
-}
+import { useState, useEffect } from 'react';
+import { createClient } from '@/utils/supabase/client';
+import { useRouter } from 'next/navigation';
+import ChessBoard from '@/components/chess/ChessBoard';
+import { GameData, PlayerColor, GameClientProps } from '@/lib/types/Chess';
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Alert,
+  AlertDescription,
+} from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 export default function GameClient({ gameId, game: initialGame, userId }: GameClientProps) {
   const supabase = createClient();
   const router = useRouter();
-  const [game, setGame] = useState<Game>(initialGame);
+  const [game, setGame] = useState<GameData>(initialGame);
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string>('');
 
   useEffect(() => {
-    console.log("Setting up realtime for game:", gameId);
-
     // Fetch fresh data immediately
     const fetchGame = async () => {
       const { data, error } = await supabase
-        .from("games")
-        .select("*")
-        .eq("id", gameId)
+        .from('games')
+        .select('*')
+        .eq('id', gameId)
         .single();
 
       if (!error && data) {
-        console.log("Fresh game data:", data);
-        setGame(data as Game);
+        setGame(data as GameData);
       }
     };
 
     fetchGame();
 
-    // Set up realtime subscription with better debugging
+    // Set up realtime subscription
     const channel = supabase
       .channel(`game-${gameId}`)
       .on(
-        "postgres_changes",
+        'postgres_changes',
         {
-          event: "UPDATE",
-          schema: "public",
-          table: "games",
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'games',
           filter: `id=eq.${gameId}`,
         },
         (payload) => {
-          console.log("Game update received:", payload.new);
-          setGame(payload.new as Game);
+          setGame(payload.new as GameData);
         }
       )
       .subscribe((status) => {
-        console.log("Subscription status:", status);
+        setSubscriptionStatus(status);
       });
 
     return () => {
@@ -77,122 +65,199 @@ export default function GameClient({ gameId, game: initialGame, userId }: GameCl
     };
   }, [gameId, supabase]);
 
-  const getPlayerRole = (): "w" | "b" | undefined => {
-    if (game.white_player === userId) return "w";
-    if (game.black_player === userId) return "b";
+  const getPlayerRole = (): PlayerColor | undefined => {
+    if (game.white_player === userId) return 'w';
+    if (game.black_player === userId) return 'b';
     return undefined;
   };
 
   const handleJoinGame = async () => {
     // Determine which role the user should take
-    const role = !game.white_player ? "white_player" : "black_player";
+    const role = !game.white_player ? 'white_player' : 'black_player';
 
     try {
-      console.log("Joining as:", role, "User ID:", userId);
-
-      const { data, error } = await supabase
-        .from("games")
+      const { error } = await supabase
+        .from('games')
         .update({
           [role]: userId,
-          status: "active",
+          status: 'active',
           updated_at: new Date().toISOString(),
         })
-        .eq("id", gameId)
-        .select();
+        .eq('id', gameId);
 
       if (error) {
-        console.error("Join error:", error);
-        alert(`Failed to join: ${error.message}`);
+        console.error('Join error:', error);
         return;
       }
-
-      console.log("Join success, updated game:", data);
 
       // Force a refresh of the game data
       router.refresh();
     } catch (error) {
-      console.error("Join error:", error);
-      alert("Failed to join the game");
-    }
-  };
-
-  const handleResignGame = async () => {
-    if (!confirm("Are you sure you want to resign?")) return;
-
-    try {
-      const { error } = await supabase
-        .from("games")
-        .update({
-          status: "resigned",
-          winner:
-            game.white_player === userId
-              ? game.black_player
-              : game.white_player,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", gameId);
-
-      if (error) throw error;
-    } catch (error) {
-      console.error("Error resigning game:", error);
-      alert("Failed to resign the game");
+      console.error('Join error:', error);
     }
   };
 
   const playerRole = getPlayerRole();
   const canJoin =
-    game.status === "waiting" &&
+    game.status === 'waiting' &&
     ((game.white_player === null && game.black_player !== userId) ||
       (game.black_player === null && game.white_player !== userId));
 
+  // Determine connection status for display
+  const isConnected = subscriptionStatus === 'SUBSCRIBED';
+  
   return (
     <div className="space-y-6">
-      <div className="bg-accent p-4 rounded">
-        <h2 className="text-lg font-semibold mb-2">Game Information</h2>
-        <p>Status: {game.status}</p>
-        <p>Current Turn: {game.turn === 'w' ? 'White' : 'Black'}</p>
-        <p>
-          White Player:{" "}
-          {game.white_player
-            ? game.white_player === userId
-              ? "You"
-              : "Opponent"
-            : "Waiting..."}
-        </p>
-        <p>
-          Black Player:{" "}
-          {game.black_player
-            ? game.black_player === userId
-              ? "You"
-              : "Opponent"
-            : "Waiting..."}
-        </p>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Game Information</CardTitle>
+            <Badge variant={isConnected ? "default" : "destructive"} className="ml-2">
+              {isConnected ? "Connected" : "Reconnecting..."}
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Status</p>
+              <p className="font-medium">
+                <Badge variant={game.status === 'active' ? "default" : 
+                              game.status === 'completed' ? "outline" : 
+                              game.status === 'waiting' ? "secondary" : "destructive"}>
+                  {game.status.charAt(0).toUpperCase() + game.status.slice(1)}
+                </Badge>
+              </p>
+            </div>
+            {game.status === 'active' && (
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Current Turn</p>
+                <p className="font-medium">{game.turn === 'w' ? 'White' : 'Black'}</p>
+              </div>
+            )}
+            {game.status !== 'active' && game.winner && (
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Winner</p>
+                <p className="font-medium">
+                  {game.winner === userId ? (
+                    <span className="text-green-600 dark:text-green-500 font-bold">You</span>
+                  ) : (
+                    <span>Opponent</span>
+                  )}
+                </p>
+              </div>
+            )}
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">White Player</p>
+              <p className="font-medium">
+                {game.white_player
+                  ? game.white_player === userId
+                    ? 'You'
+                    : 'Opponent'
+                  : 'Waiting...'}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Black Player</p>
+              <p className="font-medium">
+                {game.black_player
+                  ? game.black_player === userId
+                    ? 'You'
+                    : 'Opponent'
+                  : 'Waiting...'}
+              </p>
+            </div>
+          </div>
 
-        {canJoin && (
-          <button
-            onClick={handleJoinGame}
-            className="mt-4 px-4 py-2 bg-green-600 text-white rounded font-bold"
-          >
-            Join as {!game.white_player ? "White" : "Black"}
-          </button>
-        )}
+          {canJoin && (
+            <Button 
+              onClick={handleJoinGame}
+              className="w-full mt-2"
+            >
+              Join as {!game.white_player ? 'White' : 'Black'}
+            </Button>
+          )}
+          
+          {/* Game instructions for players who joined */}
+          {playerRole && game.status === 'waiting' && (
+            <Alert>
+              <AlertDescription>
+                Waiting for an opponent to join. Share the game link to invite someone.
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
 
-        {game.status === "active" && playerRole && (
-          <button
-            onClick={handleResignGame}
-            className="mt-4 ml-2 px-4 py-2 bg-destructive text-destructive-foreground rounded hover:bg-destructive/90 transition"
-          >
-            Resign
-          </button>
-        )}
-      </div>
+      {/* Show the game over summary when the game is completed/resigned/draw */}
+      {(game.status === 'completed' || game.status === 'resigned' || game.status === 'draw') && (
+        <Card className="border-2 border-yellow-500 dark:border-yellow-600 shadow-lg">
+          <CardHeader className="text-center">
+            <CardTitle>
+              {game.status === 'completed' ? '♚ Game Over - Checkmate! ♚' : 
+               game.status === 'draw' ? '🤝 Game Over - Draw!' :
+               '🏳️ Game Over - Resignation!'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-center">
+            {game.winner && (
+              <p className="text-lg font-medium mb-3">
+                {game.winner === userId ? (
+                  <span className="text-green-600 dark:text-green-500">You won!</span>
+                ) : (
+                  <span>Your opponent won.</span>
+                )}
+              </p>
+            )}
+            {game.status === 'draw' && (
+              <p className="text-lg font-medium mb-3">The game ended in a draw.</p>
+            )}
+            <p className="text-muted-foreground mb-4">
+              You can view the final position and moves below.
+            </p>
+          </CardContent>
+          <CardFooter className="flex justify-center gap-4">
+            <Button
+              onClick={() => window.location.href = '/dashboard'}
+              variant="default"
+            >
+              Return to Dashboard
+            </Button>
+            <Button
+              onClick={() => {
+                // Here you would add logic to create a rematch
+                alert('Rematch functionality would go here');
+              }}
+              variant="outline"
+            >
+              Request Rematch
+            </Button>
+          </CardFooter>
+        </Card>
+      )}
 
-      {/* Only pass the props that ChessBoard expects */}
-      <ChessBoard 
-        gameId={gameId} 
-        userId={userId} 
-        playerColor={playerRole} 
-      />
+      {/* Render the chess board for active games or as a read-only display for completed games */}
+      {game.status !== 'waiting' && (
+        <div className={game.status !== 'active' ? "opacity-90 pointer-events-none" : ""}>
+          <ChessBoard 
+            gameId={gameId} 
+            userId={userId} 
+            playerColor={playerRole} 
+          />
+        </div>
+      )}
+      
+      {/* If game is waiting and user hasn't joined, show instructions */}
+      {game.status === 'waiting' && !playerRole && !canJoin && (
+        <Alert>
+          <AlertDescription>
+            You are viewing this game as a spectator. The game hasn't started yet.
+          </AlertDescription>
+        </Alert>
+      )}
     </div>
   );
 }
