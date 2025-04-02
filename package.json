@@ -1,7 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "dev": "next dev -p 8080",
+    "dev": "next dev -p 8080 --turbo",
     "build": "next build",
     "start": "next start"
   },
@@ -20,13 +20,14 @@
     "chess.js": "^1.1.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "eslint-config-next": "^15.2.4",
     "lucide-react": "^0.468.0",
-    "next": "latest",
+    "next": "^15.2.4",
     "next-themes": "^0.4.3",
     "prettier": "^3.3.3",
-    "react": "19.0.0",
+    "react": "^19.1.0",
     "react-chessboard": "^4.7.2",
-    "react-dom": "19.0.0",
+    "react-dom": "^19.1.0",
     "sharp": "^0.33.5"
   },
   "devDependencies": {
