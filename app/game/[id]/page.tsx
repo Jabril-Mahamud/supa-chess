@@ -4,7 +4,7 @@ import Link from 'next/link';
 import GameClient from './game-client';
 import { GameData } from '@/lib/types/Chess';
 import { Button } from '@/components/ui/button';
-import { 
+import {
   Card,
   CardContent,
   CardHeader,
@@ -13,33 +13,31 @@ import {
   CardFooter
 } from '@/components/ui/card';
 
-interface GamePageParams {
-  params: {
-    id: string;
-  };
-}
-
-export default async function GamePage({ params }: GamePageParams) {
-  const { id } = params;
+// Using the original param structure to maintain compatibility with Next.js
+export default async function GamePage(context: any) {
+  // Extract params manually as in the original
+  const params = context.params;
+  const id = params?.id;
+  
   const supabase = await createClient();
-
+  
   // Get the current user
   const {
     data: { user },
     error: userError,
   } = await supabase.auth.getUser();
-
+  
   if (!user || userError) {
     return redirect('/sign-in');
   }
-  
+ 
   // Fetch the game data
   const { data: gameData, error: gameError } = await supabase
     .from('games')
     .select('*')
     .eq('id', id)
     .single();
-    
+   
   if (gameError || !gameData) {
     return (
       <div className="container max-w-6xl mx-auto py-8">
@@ -59,10 +57,10 @@ export default async function GamePage({ params }: GamePageParams) {
       </div>
     );
   }
-
+  
   // Cast the game data to our type
   const game = gameData as GameData;
-
+  
   return (
     <div className="container max-w-6xl mx-auto py-6">
       <div className="flex justify-between items-center mb-6">
@@ -71,11 +69,11 @@ export default async function GamePage({ params }: GamePageParams) {
           <Link href="/dashboard">Back to Dashboard</Link>
         </Button>
       </div>
-      
-      <GameClient 
-        gameId={id} 
-        game={game} 
-        userId={user.id} 
+     
+      <GameClient
+        gameId={id}
+        game={game}
+        userId={user.id}
       />
     </div>
   );
