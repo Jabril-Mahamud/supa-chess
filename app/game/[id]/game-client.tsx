@@ -106,6 +106,29 @@ export default function GameClient({ gameId, game: initialGame, userId }: GameCl
   // Determine connection status for display
   const isConnected = subscriptionStatus === 'SUBSCRIBED';
   
+  // Helper function to get status badge variant
+  const getStatusBadgeVariant = (status:any) => {
+    switch (status) {
+      case 'active':
+        return "default";
+      case 'completed':
+        return "outline";
+      case 'waiting':
+        return "secondary";
+      case 'resigned':
+        return "destructive";
+      case 'draw':
+        return "outline";
+      default:
+        return "default";
+    }
+  };
+
+  // Helper function to format status text
+  const formatStatus = (status:any) => {
+    return status.charAt(0).toUpperCase() + status.slice(1);
+  };
+  
   return (
     <div className="space-y-6">
       <Card>
@@ -121,30 +144,32 @@ export default function GameClient({ gameId, game: initialGame, userId }: GameCl
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Status</p>
-              <p className="font-medium">
-                <Badge variant={game.status === 'active' ? "default" : 
-                              game.status === 'completed' ? "outline" : 
-                              game.status === 'waiting' ? "secondary" : "destructive"}>
-                  {game.status.charAt(0).toUpperCase() + game.status.slice(1)}
+              <div className="font-medium">
+                <Badge variant={getStatusBadgeVariant(game.status)}>
+                  {formatStatus(game.status)}
                 </Badge>
-              </p>
+              </div>
             </div>
             {game.status === 'active' && (
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Current Turn</p>
-                <p className="font-medium">{game.turn === 'w' ? 'White' : 'Black'}</p>
+                <div className="font-medium">
+                  <Badge variant={game.turn === 'w' ? "default" : "secondary"}>
+                    {game.turn === 'w' ? 'White' : 'Black'}
+                  </Badge>
+                </div>
               </div>
             )}
             {game.status !== 'active' && game.winner && (
               <div>
                 <p className="text-sm font-medium text-muted-foreground">Winner</p>
-                <p className="font-medium">
+                <div className="font-medium">
                   {game.winner === userId ? (
-                    <span className="text-green-600 dark:text-green-500 font-bold">You</span>
+                    <Badge variant="default">You</Badge>
                   ) : (
-                    <span>Opponent</span>
+                    <Badge variant="secondary">Opponent</Badge>
                   )}
-                </p>
+                </div>
               </div>
             )}
           </div>
@@ -152,23 +177,23 @@ export default function GameClient({ gameId, game: initialGame, userId }: GameCl
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-sm font-medium text-muted-foreground">White Player</p>
-              <p className="font-medium">
+              <div className="font-medium">
                 {game.white_player
                   ? game.white_player === userId
                     ? 'You'
                     : 'Opponent'
                   : 'Waiting...'}
-              </p>
+              </div>
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Black Player</p>
-              <p className="font-medium">
+              <div className="font-medium">
                 {game.black_player
                   ? game.black_player === userId
                     ? 'You'
                     : 'Opponent'
                   : 'Waiting...'}
-              </p>
+              </div>
             </div>
           </div>
 
@@ -221,7 +246,7 @@ export default function GameClient({ gameId, game: initialGame, userId }: GameCl
           </CardContent>
           <CardFooter className="flex justify-center gap-4">
             <Button
-              onClick={() => window.location.href = '/dashboard'}
+              onClick={() => router.push('/dashboard')}
               variant="default"
             >
               Return to Dashboard
