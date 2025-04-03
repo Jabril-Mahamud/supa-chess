@@ -98,7 +98,7 @@ export default function Hero() {
       {/* CTA Button */}
       <div className="flex flex-wrap gap-4">
         <Link
-          href="/play"
+          href="/dashboard"
           className="px-8 py-3 text-lg font-medium text-background bg-foreground rounded-md hover:bg-foreground/90 focus:outline-none focus:ring-2 focus:ring-foreground/50"
         >
           Play Now
