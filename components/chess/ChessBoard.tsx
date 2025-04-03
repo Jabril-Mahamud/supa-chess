@@ -5,7 +5,7 @@ import { ChessboardDisplay } from "./ChessboardDisplay";
 import { GameInfo } from "./GameInfo";
 import { GameOverMessage } from "./GameOverMessage";
 import { RematchDialog } from "./RematchDialog";
-import { GameDialog } from "./GameDialog"; // Import the new reusable component
+import { GameDialog } from "./GameDialog";
 import { useChessGame } from "@/hooks/useChessGame";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ChessboardProps } from "@/lib/types/Chess";
@@ -202,7 +202,18 @@ export default function ChessBoard({
         />
       </div>
 
-      {/* Keep the RematchDialog as is since it has specific functionality */}
+      {/* Display game over message for all completed, drawn, or resigned games */}
+      {isGameOver && (
+        <GameOverMessage
+          game={game}
+          gameData={gameData}
+          gameEndTime={gameData.end_time || null}
+          currentUserId={userId}
+          onRematch={handleRematch}
+        />
+      )}
+
+      {/* Keep the RematchDialog for explicit rematch requests */}
       <RematchDialog
         open={showRematchDialog}
         onClose={() => toggleRematchDialog(false)}
@@ -212,7 +223,7 @@ export default function ChessBoard({
         currentUserId={userId}
       />
 
-      {/* Use the new GameDialog for resign confirmation */}
+      {/* Use the GameDialog for resign confirmation */}
       <GameDialog
         open={showResignDialog}
         onClose={() => setShowResignDialog(false)}
@@ -227,11 +238,6 @@ export default function ChessBoard({
         confirmVariant="destructive"
         cancelVariant="outline"
       />
-
-      {/* GameOverMessage is only shown for completed games when viewed directly */}
-      {!window.location.pathname.includes("/games/") && game.isGameOver() && (
-        <GameOverMessage game={game} gameEndTime={gameData.end_time || null} />
-      )}
     </div>
   );
 }
