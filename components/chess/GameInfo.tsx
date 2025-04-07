@@ -7,6 +7,7 @@ import {
   CardHeader, 
   CardTitle 
 } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import MoveHistory from './MoveHistory';
 import { GameInfoProps } from '@//lib/types/Chess';
 
@@ -17,6 +18,7 @@ export function GameInfo({
   blackCapturedCount,
   whiteConversionDone,
   blackConversionDone,
+  lastConversionMessage,
 }: GameInfoProps) {
   return (
     <Card className="bg-accent/20">
@@ -24,6 +26,18 @@ export function GameInfo({
         <CardTitle>Game Information</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Conversion alert */}
+        {lastConversionMessage && (
+          <Alert 
+            variant="default" 
+            className="bg-yellow-50 dark:bg-yellow-900 border-yellow-500 dark:border-yellow-700 animate-pulse"
+          >
+            <AlertDescription className="font-medium text-yellow-800 dark:text-yellow-200">
+              {lastConversionMessage}
+            </AlertDescription>
+          </Alert>
+        )}
+
         {/* Captured pieces */}
         <div>
           <h3 className="font-medium mb-2">Captured Pieces</h3>
@@ -38,7 +52,7 @@ export function GameInfo({
                   className={`text-xs mt-1 ${
                     whiteConversionDone
                       ? 'text-muted-foreground'
-                      : 'text-green-600 dark:text-green-500 font-medium'
+                      : 'text-green-600 dark:text-green-500 font-medium animate-pulse'
                   }`}
                 >
                   {whiteConversionDone
@@ -57,7 +71,7 @@ export function GameInfo({
                   className={`text-xs mt-1 ${
                     blackConversionDone
                       ? 'text-muted-foreground'
-                      : 'text-green-600 dark:text-green-500 font-medium'
+                      : 'text-green-600 dark:text-green-500 font-medium animate-pulse'
                   }`}
                 >
                   {blackConversionDone
@@ -69,8 +83,15 @@ export function GameInfo({
           </div>
         </div>
 
-        {/* Special rule explanation */}
-        <Card className="bg-primary/10 border-primary/20">
+        {/* Special rule explanation with highlight if conversion available */}
+        <Card 
+          className={`bg-primary/10 border-primary/20 ${
+            (whiteCapturedCount >= 8 && !whiteConversionDone) || 
+            (blackCapturedCount >= 8 && !blackConversionDone)
+              ? 'border-green-500 dark:border-green-700'
+              : ''
+          }`}
+        >
           <CardContent className="p-3 text-sm">
             <h3 className="font-medium mb-1 text-primary">Special Rules</h3>
             <p>
