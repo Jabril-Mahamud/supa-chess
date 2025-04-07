@@ -1,18 +1,126 @@
-import Link from "next/link";
+'use client'
 import Image from "next/image";
-import NextLogo from "./next-logo";
+import Link from "next/link";
+import { Gamepad2, Clock, History } from "lucide-react";
+import ChessboardDemo from "./chess/demo/chessboard-demo";
 import SupabaseLogo from "./supabase-logo";
-import Logo from "@/public/SupaChessLogo.png"
+import NextLogo from "./next-logo";
 
-export default function Hero() {
+export default function ImprovedHero() {
   return (
-    <div className="flex flex-col items-center justify-center w-full px-4 py-16 space-y-12 text-center md:py-24">
-      {/* Logos */}
-      <div className="flex items-center justify-center gap-8">
+    <div className="container mx-auto px-4 py-16 md:py-24 max-w-7xl">
+      {/* Hero Content Container */}
+      <div className="grid md:grid-cols-2 gap-12 items-center">
+        {/* Left Column: Content */}
+        <div className="space-y-8">
+          {/* Logo and Title */}
+          <div className="flex items-center gap-4">
+            <Image 
+              src="/SupaChessLogo.png" 
+              alt="Supa-Chess Logo" 
+              width={64} 
+              height={64} 
+              className="rounded-lg shadow-md"
+            />
+            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+              Supa-Chess
+            </h1>
+          </div>
+
+          {/* Description */}
+          <div className="space-y-4">
+            <p className="text-xl text-gray-600 dark:text-gray-300">
+              A revolutionary multiplayer chess experience with unique strategic twists, 
+              powered by cutting-edge real-time technologies.
+            </p>
+
+            {/* Special Rule Highlight */}
+            <div className="bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+              <h3 className="font-semibold text-lg mb-2 flex items-center gap-2">
+                <Gamepad2 className="text-blue-600 dark:text-blue-400" />
+                Unique Game Mechanic
+              </h3>
+              <p className="text-gray-700 dark:text-gray-300 text-sm">
+                When a player loses 8 pieces, they can convert one random enemy piece 
+                to their side (excluding the king). Strategic turn-skipping adds 
+                an extra layer of tactical depth.
+              </p>
+            </div>
+          </div>
+
+          {/* Feature Highlights */}
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="flex items-start gap-3 bg-white dark:bg-gray-900 p-4 rounded-lg border border-gray-100 dark:border-gray-800 shadow-sm">
+              <Clock className="text-green-600 dark:text-green-400 flex-shrink-0" />
+              <div>
+                <h4 className="font-semibold text-gray-900 dark:text-white">
+                  Real-time Multiplayer
+                </h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Instant moves and live game updates
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start gap-3 bg-white dark:bg-gray-900 p-4 rounded-lg border border-gray-100 dark:border-gray-800 shadow-sm">
+              <History className="text-purple-600 dark:text-purple-400 flex-shrink-0" />
+              <div>
+                <h4 className="font-semibold text-gray-900 dark:text-white">
+                  Comprehensive Move Tracking
+                </h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Detailed game history and analysis
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Call to Action */}
+          <div className="flex flex-col sm:flex-row gap-4">
+            <Link 
+              href="/dashboard" 
+              className="inline-flex items-center justify-center px-6 py-3 
+              border border-transparent text-base font-medium rounded-md 
+              text-white bg-blue-600 hover:bg-blue-700 
+              focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
+              transition-colors duration-300 ease-in-out"
+            >
+              Create Game
+            </Link>
+            <Link 
+              href="/protected" 
+              className="inline-flex items-center justify-center px-6 py-3 
+              border border-gray-300 dark:border-gray-700 
+              text-base font-medium rounded-md 
+              text-gray-700 dark:text-gray-300 
+              bg-white dark:bg-gray-800 
+              hover:bg-gray-50 dark:hover:bg-gray-700
+              focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
+              transition-colors duration-300 ease-in-out"
+            >
+              Sign In
+            </Link>
+          </div>
+        </div>
+
+        {/* Right Column: Chess Illustration */}
+        <div className="hidden md:flex items-center justify-center relative">
+          <div className="absolute -inset-4 bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 
+            dark:from-blue-900/20 dark:via-purple-900/20 dark:to-pink-900/20 
+            rounded-2xl blur-2xl opacity-50 -z-10"></div>
+          
+          <div className="relative bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 
+            rounded-2xl shadow-2xl p-6 transform transition-all hover:scale-105 flex flex-col items-center justify-center">
+            <ChessboardDemo />
+          </div>
+        </div>
+      </div>
+
+      {/* Powered By Section */}
+      <div className="mt-16 flex flex-wrap justify-center items-center gap-8 opacity-70 hover:opacity-100 transition-opacity">
         <a
           href="https://supabase.com/?utm_source=create-next-app&utm_medium=template&utm_term=nextjs"
           target="_blank"
-          rel="noreferrer"
+          rel="noopener noreferrer"
           className="transition-opacity hover:opacity-80"
         >
           <SupabaseLogo />
@@ -21,101 +129,12 @@ export default function Hero() {
         <a
           href="https://nextjs.org/"
           target="_blank"
-          rel="noreferrer"
+          rel="noopener noreferrer"
           className="transition-opacity hover:opacity-80"
         >
           <NextLogo />
         </a>
       </div>
-
-      {/* Title and Description */}
-      <div className="max-w-3xl space-y-6">
-        <h1 className="text-5xl font-bold tracking-tight md:text-6xl">
-          Supa-Chess
-        </h1>
-        <p className="text-xl text-foreground/80 md:text-2xl">
-          A real-time multiplayer chess application with unique rules,
-          <br /> powered by{" "}
-          <a
-            href="https://supabase.com"
-            target="_blank"
-            rel="noreferrer"
-            className="font-semibold underline underline-offset-4 hover:text-foreground"
-          >
-            Supabase
-          </a>{" "}
-          and{" "}
-          <a
-            href="https://nextjs.org"
-            target="_blank"
-            rel="noreferrer"
-            className="font-semibold underline underline-offset-4 hover:text-foreground"
-          >
-            Next.js
-          </a>
-        </p>
-      </div>
-
-      {/* Feature Highlights with Tooltip */}
-      <div className="flex flex-col items-center gap-6 max-w-2xl">
-        <div className="p-6 border rounded-lg bg-background/50 w-full">
-          <h3 className="mb-2 text-xl font-semibold">
-            Just like chess, but with one simple twist
-          </h3>
-          <div className="relative group cursor-help">
-            <p className="text-foreground/80 underline decoration-dotted">
-              Hover to see the special rule
-            </p>
-            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 p-4 bg-foreground text-background rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-10">
-              <p className="text-sm">
-                When a player loses 8 pieces, they can convert one random enemy
-                piece to their side (excluding the king). Players can also
-                strategically skip a turn.
-              </p>
-              <div className="absolute w-3 h-3 bg-foreground transform rotate-45 -bottom-1.5 left-1/2 -translate-x-1/2"></div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap justify-center gap-6 w-full">
-          <div className="p-4 border rounded-lg bg-background/50 flex-1 min-w-[200px]">
-            <h3 className="mb-1 text-lg font-semibold">
-              Real-time Multiplayer
-            </h3>
-            <p className="text-foreground/70 text-sm">
-              Play with friends with real-time updates
-            </p>
-          </div>
-          <div className="p-4 border rounded-lg bg-background/50 flex-1 min-w-[200px]">
-            <h3 className="mb-1 text-lg font-semibold">Move History</h3>
-            <p className="text-foreground/70 text-sm">
-              Track all moves and game events
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* CTA Button */}
-      <div className="flex flex-wrap gap-4">
-        <Link
-          href="/dashboard"
-          className="px-8 py-3 text-lg font-medium text-background bg-foreground rounded-md hover:bg-foreground/90 focus:outline-none focus:ring-2 focus:ring-foreground/50"
-        >
-          Play Now
-        </Link>
-      </div>
-
-      {/* Chess Graphic/Illustration Placeholder */}
-      <div className="relative w-full max-w-lg aspect-square">
-        <div className="absolute top-0 left-0 w-full h-full blur-3xl opacity-20 bg-gradient-to-br from-blue-500 via-purple-500 to-red-500 rounded-full -z-10"></div>
-        <Image
-          src={Logo}
-          alt="Picture of the author"
-        />
-      </div>
-
-      {/* Subtle divider */}
-      <div className="w-full p-[1px] bg-gradient-to-r from-transparent via-foreground/10 to-transparent" />
     </div>
   );
 }
