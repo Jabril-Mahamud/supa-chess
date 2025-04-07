@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Chessboard } from 'react-chessboard';
 import { Square, Piece } from 'react-chessboard/dist/chessboard/types';
 import { ChessboardDisplayProps } from '@/lib/types/Chess';
@@ -11,39 +11,46 @@ export function ChessboardDisplay({
   playerColor,
   onPieceDrop,
   customSquareStyles = {},
+  conversionSquare = null, // New prop to highlight converted pieces
 }: ChessboardDisplayProps) {
   const [moveSquares, setMoveSquares] = useState<Record<string, React.CSSProperties>>({});
-  const [selectedPiece, setSelectedPiece] = useState<string | null>(null);
+  const [flashingSquare, setFlashingSquare] = useState<string | null>(null);
+  const [isFlashing, setIsFlashing] = useState(false);
   
-  // Function to handle piece click and show valid moves
-  const onPieceClick = (piece: Piece, square: Square) => {
-    // If we click on the already selected piece, deselect it
-    if (square === selectedPiece) {
-      setSelectedPiece(null);
-      setMoveSquares({});
-      return;
+  // Handle flashing animation for conversions
+  useEffect(() => {
+    if (conversionSquare) {
+      setFlashingSquare(conversionSquare);
+      setIsFlashing(true);
+      
+      // Set up flashing effect with alternating colors
+      const flashInterval = setInterval(() => {
+        setIsFlashing(prev => !prev);
+      }, 400); // Toggle every 400ms
+      
+      // Clean up after 2.4 seconds (6 flashes)
+      const cleanupTimer = setTimeout(() => {
+        clearInterval(flashInterval);
+        setFlashingSquare(null);
+        setIsFlashing(false);
+      }, 2400);
+      
+      return () => {
+        clearInterval(flashInterval);
+        clearTimeout(cleanupTimer);
+      };
     }
-    
-    // Only show valid moves for the current player's pieces
+  }, [conversionSquare]);
+  
+  // Function to handle when the user starts dragging a piece
+  const onDragStart = (piece: Piece, square: Square) => {
+    // Only allow the current player's pieces to be dragged
     const pieceColor = piece.charAt(0) as 'w' | 'b';
     if (playerColor && pieceColor !== playerColor) {
-      // If we click on an opponent's piece when another piece is selected, try to capture it
-      if (selectedPiece && moveSquares[square as string]) {
-        const pieceObj = game.get(selectedPiece as any);
-        if (pieceObj) {
-          const pieceString = `${pieceObj.color}${pieceObj.type.toUpperCase()}`;
-          onPieceDrop(selectedPiece as Square, square, pieceString as Piece);
-          setSelectedPiece(null);
-          setMoveSquares({});
-        }
-      }
-      return;
+      return false;
     }
     
-    // Store the selected piece
-    setSelectedPiece(square as string);
-    
-    // Get all possible moves for the clicked piece
+    // Get all possible moves for the dragged piece
     const moves = game.moves({ 
       square: square as string, 
       verbose: true 
@@ -52,70 +59,56 @@ export function ChessboardDisplay({
     // Create style objects for each valid destination square
     const newMoveSquares: Record<string, React.CSSProperties> = {};
     
-    // Highlight the selected piece
-    newMoveSquares[square as string] = {
-      backgroundColor: 'rgba(255, 255, 0, 0.4)'
-    };
-    
+    // Add styles for valid moves
     moves.forEach((move: any) => {
       // For empty square moves
       if (!game.get(move.to as any)) {
         newMoveSquares[move.to] = {
-          background: 'radial-gradient(circle, rgba(0,0,0,.1) 25%, transparent 25%)',
+          background: 'radial-gradient(circle, rgba(0,255,0,.3) 25%, transparent 25%)',
           borderRadius: '50%'
         };
       }
-      // For capture moves
+      // For capture moves - using red to indicate capture
       else {
         newMoveSquares[move.to] = {
-          background: 'radial-gradient(transparent 0%, transparent 79%, rgba(220,0,0,.3) 80%)',
-          borderRadius: '50%'
+          background: 'rgba(255,0,0,0.2)',
+          boxShadow: 'inset 0 0 8px 4px rgba(255,0,0,0.3)',
+          borderRadius: '4px'
         };
       }
     });
     
     setMoveSquares(newMoveSquares);
-  };
-  
-  // Handle square click
-  const onSquareClick = (square: Square) => {
-    // If we have a selected piece and this is a valid move square
-    if (selectedPiece && moveSquares[square as string] && selectedPiece !== square) {
-      const pieceObj = game.get(selectedPiece as any);
-      if (pieceObj) {
-        // Convert to the format expected by react-chessboard
-        const pieceString = `${pieceObj.color}${pieceObj.type.toUpperCase()}`;
-        onPieceDrop(selectedPiece as Square, square, pieceString as Piece);
-      }
-      // Clear selection
-      setSelectedPiece(null);
-      setMoveSquares({});
-    } 
-    // If we click on an empty or invalid square, clear the selection
-    else if (square !== selectedPiece) {
-      setSelectedPiece(null);
-      setMoveSquares({});
-    }
+    return true;
   };
   
   // When a piece is dropped, clear the move indicators
   const handlePieceDrop = (sourceSquare: Square, targetSquare: Square, piece: Piece) => {
     const result = onPieceDrop(sourceSquare, targetSquare, piece);
-    setSelectedPiece(null);
+    // Clear the move indicators regardless of whether the move was valid
     setMoveSquares({});
     return result;
   };
   
-  // Merge the custom square styles with our move indicators
-  const mergedStyles = { ...customSquareStyles };
+  // When drag is canceled (piece dropped back or outside board), clear indicators
+  const onDragEnd = () => {
+    setMoveSquares({});
+  };
   
-  // Apply move squares on top of custom styles
-  Object.entries(moveSquares).forEach(([square, style]) => {
-    mergedStyles[square] = {
-      ...mergedStyles[square],
-      ...style
+  // Merge all the styles: custom styles, move indicators, and conversion flashing
+  const mergedStyles = { ...customSquareStyles, ...moveSquares };
+  
+  // Add flashing effect for converted pieces
+  if (flashingSquare) {
+    mergedStyles[flashingSquare] = {
+      ...mergedStyles[flashingSquare],
+      backgroundColor: isFlashing ? 'rgba(255, 50, 50, 0.7)' : 'rgba(255, 255, 50, 0.7)',
+      boxShadow: isFlashing 
+        ? 'inset 0 0 15px 5px rgba(255, 0, 0, 0.8)' 
+        : 'inset 0 0 15px 5px rgba(255, 255, 0, 0.8)',
+      transition: 'all 0.2s ease-in-out'
     };
-  });
+  }
 
   return (
     <div className="relative rounded-lg overflow-hidden shadow-md dark:shadow-gray-800">
@@ -123,8 +116,8 @@ export function ChessboardDisplay({
         id={gameId}
         position={game.fen()}
         onPieceDrop={handlePieceDrop}
-        onPieceClick={onPieceClick}
-        onSquareClick={onSquareClick}
+        onPieceDragBegin={onDragStart}
+        onPieceDragEnd={onDragEnd}
         boardOrientation={playerColor === 'b' ? 'black' : 'white'}
         customBoardStyle={{
           borderRadius: '8px',

@@ -58,6 +58,7 @@ export interface ChessboardDisplayProps {
   playerColor?: PlayerColor;
   onPieceDrop: (sourceSquare: any, targetSquare: any, piece: any) => boolean;
   customSquareStyles?: Record<string, React.CSSProperties>;
+  conversionSquare?: string | null;
 }
 
 export interface GameInfoProps {
@@ -67,6 +68,7 @@ export interface GameInfoProps {
   blackCapturedCount: number;
   whiteConversionDone: boolean;
   blackConversionDone: boolean;
+  lastConversionMessage?: string | null; // Add this new prop
 }
 
 export interface GameOverMessageProps {

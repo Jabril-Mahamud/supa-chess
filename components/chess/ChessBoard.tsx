@@ -37,6 +37,8 @@ export default function ChessBoard({
     blackCapturedCount,
     whiteConversionDone,
     blackConversionDone,
+    conversionSquare,        // New prop for conversion square
+    lastConversionMessage,   // New prop for conversion message
   } = useChessGame(gameId, userId, playerColor);
 
   if (loading) {
@@ -143,6 +145,7 @@ export default function ChessBoard({
               playerColor={playerColor}
               onPieceDrop={isGameOver ? () => false : handleMove}
               customSquareStyles={customSquareStyles}
+              conversionSquare={conversionSquare} // Pass conversion square
             />
           </div>
 
@@ -199,6 +202,7 @@ export default function ChessBoard({
           blackCapturedCount={blackCapturedCount}
           whiteConversionDone={whiteConversionDone}
           blackConversionDone={blackConversionDone}
+          lastConversionMessage={lastConversionMessage} // Pass conversion message
         />
       </div>
 

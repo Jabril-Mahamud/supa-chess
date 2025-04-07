@@ -34,6 +34,8 @@ export function useChessGame(
     checkmateHighlight: string | null;
     checkHighlight: string | null;
     showRematchDialog: boolean;
+    conversionSquare: string | null; // New: track the square where conversion happened
+    lastConversionMessage: string | null; // New: store the last conversion message
   }>({
     chess: new Chess(),
     data: null,
@@ -48,6 +50,8 @@ export function useChessGame(
     checkmateHighlight: null,
     checkHighlight: null,
     showRematchDialog: false,
+    conversionSquare: null, // Initialize new field
+    lastConversionMessage: null, // Initialize new field
   });
 
   // Refs for tracking sync state
@@ -291,8 +295,8 @@ export function useChessGame(
       return {
         square: pieceToConvert.square,
         type: pieceToConvert.type,
-        from: enemyColor,
-        to: playerLosing,
+        from: enemyColor as PlayerColor,
+        to: playerLosing as PlayerColor,
       };
     },
     [findPiecesOfColor]
@@ -845,21 +849,24 @@ export function useChessGame(
         );
 
         // Check if we need to convert a piece
-        let conversionData = null;
-        let conversionMessage = null;
+        let conversionData: ConversionData | null = null;
+        let conversionMessage: string | null = null;
 
         // Handle white losing 8+ pieces and conversion hasn't happened yet
+        // For white conversion:
         if (whiteCaptured >= 8 && !gameState.whiteConversionDone) {
           conversionData = convertRandomEnemyPiece(gameCopy, "w");
 
-          if (conversionData) {
-            conversionMessage = `White converted a ${formatPieceType(
-              conversionData.type
-            )} at ${conversionData.square}!`;
+          if (conversionData !== null) {
+            // Destructure to avoid null checks in template
+            const { type, square } = conversionData;
+            conversionMessage = `White converted a ${formatPieceType(type)} at ${square}!`;
 
             setGameState((state) => ({
               ...state,
               whiteConversionDone: true,
+              conversionSquare: square,
+              lastConversionMessage: conversionMessage,
             }));
           }
         }
@@ -868,14 +875,16 @@ export function useChessGame(
         if (blackCaptured >= 8 && !gameState.blackConversionDone) {
           conversionData = convertRandomEnemyPiece(gameCopy, "b");
 
-          if (conversionData) {
-            conversionMessage = `Black converted a ${formatPieceType(
-              conversionData.type
-            )} at ${conversionData.square}!`;
+          if (conversionData !== null) {
+            // Add explicit null check
+            const { type, square } = conversionData;
+            conversionMessage = `Black converted a ${formatPieceType(type)} at ${square}!`
 
             setGameState((state) => ({
               ...state,
               blackConversionDone: true,
+              conversionSquare: square,
+              lastConversionMessage: conversionMessage,
             }));
           }
         }
@@ -1148,114 +1157,126 @@ export function useChessGame(
   // Handle resigning
   // TypeScript-safe client-side workaround for resignation without profiles table
   // Final solution for handleResign function - this avoids the profiles table issue
-// Replace the existing handleResign function in hooks/useChessGame.tsx with this version
+  // Replace the existing handleResign function in hooks/useChessGame.tsx with this version
 
-const handleResign = useCallback(async () => {
-  try {
-    // First check if the game is already over
-    if (gameState.data?.status !== "active") {
-      showNotification("Game is already complete.", 3000);
-      return;
-    }
-
-    // Determine the winner (opponent of the resigning player)
-    const winner =
-      gameState.data?.white_player === userId
-        ? gameState.data?.black_player
-        : gameState.data?.white_player;
-
-    console.log("Implementing client-side resignation");
-    
-    // Current timestamp to use consistently
-    const timestamp = new Date().toISOString();
-    
-    // Update local state immediately for better user experience
-    setGameState((state) => ({
-      ...state,
-      data: state.data ? {
-        ...state.data,
-        status: "resigned",
-        winner: winner,
-        updated_at: timestamp,
-        end_time: timestamp
-      } : null,
-      showRematchDialog: true
-    }));
-    
-    // Try to record the move in the moves table first - this works reliably
+  const handleResign = useCallback(async () => {
     try {
-      await supabase.from("moves").insert({
-        game_id: gameId,
-        user_id: userId,
-        move_notation: "Resigned",
-        position_after: gameState.chess.fen(),
-        created_at: timestamp
-      });
-      console.log("Successfully recorded resignation move");
-    } catch (moveError) {
-      console.warn("Couldn't record resignation move:", moveError);
-    }
-    
-    // Show notification about the resignation
-    showNotification("You have resigned the game.", 0);
-    
-    // Try a direct game update - this may fail due to profiles table issue
-    try {
-      const { error: updateError } = await supabase
-        .from("games")
-        .update({
-          status: "resigned",
-          winner: winner,
-          updated_at: timestamp,
-          // Do not include end_time if it causes issues
-          end_time: timestamp
-        })
-        .eq("id", gameId);
-        
-      if (!updateError) {
-        console.log("Game update succeeded!");
-      } else {
-        console.warn("Error updating game:", updateError);
-        
-        // If there's an error due to profiles table, try a minimal update
-        // This might work if the RLS policy only triggers on certain fields
-        try {
-          const { error: minimalError } = await supabase
-            .from("games")
-            .update({ 
-              status: "resigned" 
-            })
-            .eq("id", gameId);
-            
-          if (!minimalError) {
-            console.log("Minimal game update succeeded!");
-            
-            // If that worked, try updating the winner separately
-            const { error: winnerError } = await supabase
-              .from("games")
-              .update({ winner: winner })
-              .eq("id", gameId);
-              
-            if (!winnerError) {
-              console.log("Winner update succeeded!");
-            }
-          }
-        } catch (minimalError) {
-          console.warn("Even minimal update failed:", minimalError);
-        }
+      // First check if the game is already over
+      if (gameState.data?.status !== "active") {
+        showNotification("Game is already complete.", 3000);
+        return;
       }
+
+      // Determine the winner (opponent of the resigning player)
+      const winner =
+        gameState.data?.white_player === userId
+          ? gameState.data?.black_player
+          : gameState.data?.white_player;
+
+      console.log("Implementing client-side resignation");
+
+      // Current timestamp to use consistently
+      const timestamp = new Date().toISOString();
+
+      // Update local state immediately for better user experience
+      setGameState((state) => ({
+        ...state,
+        data: state.data
+          ? {
+              ...state.data,
+              status: "resigned",
+              winner: winner,
+              updated_at: timestamp,
+              end_time: timestamp,
+            }
+          : null,
+        showRematchDialog: true,
+      }));
+
+      // Try to record the move in the moves table first - this works reliably
+      try {
+        await supabase.from("moves").insert({
+          game_id: gameId,
+          user_id: userId,
+          move_notation: "Resigned",
+          position_after: gameState.chess.fen(),
+          created_at: timestamp,
+        });
+        console.log("Successfully recorded resignation move");
+      } catch (moveError) {
+        console.warn("Couldn't record resignation move:", moveError);
+      }
+
+      // Show notification about the resignation
+      showNotification("You have resigned the game.", 0);
+
+      // Try a direct game update - this may fail due to profiles table issue
+      try {
+        const { error: updateError } = await supabase
+          .from("games")
+          .update({
+            status: "resigned",
+            winner: winner,
+            updated_at: timestamp,
+            // Do not include end_time if it causes issues
+            end_time: timestamp,
+          })
+          .eq("id", gameId);
+
+        if (!updateError) {
+          console.log("Game update succeeded!");
+        } else {
+          console.warn("Error updating game:", updateError);
+
+          // If there's an error due to profiles table, try a minimal update
+          // This might work if the RLS policy only triggers on certain fields
+          try {
+            const { error: minimalError } = await supabase
+              .from("games")
+              .update({
+                status: "resigned",
+              })
+              .eq("id", gameId);
+
+            if (!minimalError) {
+              console.log("Minimal game update succeeded!");
+
+              // If that worked, try updating the winner separately
+              const { error: winnerError } = await supabase
+                .from("games")
+                .update({ winner: winner })
+                .eq("id", gameId);
+
+              if (!winnerError) {
+                console.log("Winner update succeeded!");
+              }
+            }
+          } catch (minimalError) {
+            console.warn("Even minimal update failed:", minimalError);
+          }
+        }
+      } catch (error: unknown) {
+        console.warn("Expected error updating game:", error);
+      }
+
+      // Display a rematch dialog even if the database update failed
+      toggleRematchDialog(true);
     } catch (error: unknown) {
-      console.warn("Expected error updating game:", error);
+      console.error("Error in resign handler:", error);
+      showNotification(
+        "Game has been resigned locally. Database update failed.",
+        5000
+      );
     }
-    
-    // Display a rematch dialog even if the database update failed
-    toggleRematchDialog(true);
-    
-  } catch (error: unknown) {
-    console.error("Error in resign handler:", error);
-    showNotification("Game has been resigned locally. Database update failed.", 5000);
-  }
-}, [gameId, userId, supabase, gameState.data, gameState.chess, showNotification, toggleRematchDialog]);
+  }, [
+    gameId,
+    userId,
+    supabase,
+    gameState.data,
+    gameState.chess,
+    showNotification,
+    toggleRematchDialog,
+  ]);
 
   // Setup realtime subscriptions and auto-sync
   useEffect(() => {
@@ -1356,5 +1377,7 @@ const handleResign = useCallback(async () => {
     blackCapturedCount: gameState.blackCapturedCount,
     whiteConversionDone: gameState.whiteConversionDone,
     blackConversionDone: gameState.blackConversionDone,
+    conversionSquare: gameState.conversionSquare, // Add this line
+    lastConversionMessage: gameState.lastConversionMessage, // Add this line
   };
 }

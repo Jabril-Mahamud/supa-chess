@@ -253,8 +253,7 @@ export default function GameClient({ gameId, game: initialGame, userId }: GameCl
             </Button>
             <Button
               onClick={() => {
-                // Here you would add logic to create a rematch
-                alert('Rematch functionality would go here');
+                router.push('/dashboard')
               }}
               variant="outline"
             >
