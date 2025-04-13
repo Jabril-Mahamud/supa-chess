@@ -6,9 +6,10 @@ import { GameInfo } from "./GameInfo";
 import { GameOverMessage } from "./GameOverMessage";
 import { RematchDialog } from "./RematchDialog";
 import { GameDialog } from "./GameDialog";
-import { useChessGame } from "@/hooks/useChessGame";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ChessboardProps } from "@/lib/types/Chess";
+import { useChessGame } from "@/hooks/useChessGame";
+
 
 export default function ChessBoard({
   gameId,
@@ -37,9 +38,9 @@ export default function ChessBoard({
     blackCapturedCount,
     whiteConversionDone,
     blackConversionDone,
-    conversionSquare,        // New prop for conversion square
-    lastConversionMessage,   // New prop for conversion message
-  } = useChessGame(gameId, userId, playerColor);
+    conversionSquare,
+    lastConversionMessage,
+  } = useChessGame(gameId, userId, playerColor); 
 
   if (loading) {
     return (

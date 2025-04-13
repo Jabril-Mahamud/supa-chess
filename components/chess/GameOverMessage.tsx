@@ -10,12 +10,20 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { GameOverMessageProps, GameData } from "@/lib/types/Chess";
 
 interface ExtendedGameOverMessageProps extends GameOverMessageProps {
   gameData?: GameData;
   currentUserId?: string;
   onRematch?: () => void;
+  useDialog?: boolean; // New prop to determine whether to use dialog or card
 }
 
 export function GameOverMessage({ 
@@ -23,9 +31,11 @@ export function GameOverMessage({
   gameEndTime, 
   gameData, 
   currentUserId,
-  onRematch
+  onRematch,
+  useDialog = false // Default to card view if not specified
 }: ExtendedGameOverMessageProps) {
   const router = useRouter();
+  const [dialogOpen, setDialogOpen] = React.useState(false);
   
   // If no game data is provided, or the game isn't over and not resigned, don't show anything
   if (!gameData || (gameData.status !== 'completed' && gameData.status !== 'draw' && gameData.status !== 'resigned')) {
@@ -48,6 +58,84 @@ export function GameOverMessage({
     return 'Game Over';
   };
 
+  // Helper function to get the appropriate game result message
+  const getGameResult = () => {
+    if (isCheckmate) {
+      return isWinner 
+        ? "Congratulations, you won by checkmate!" 
+        : "Your opponent won by checkmate.";
+    }
+    if (isDraw) {
+      let drawReason = "";
+      if (game.isStalemate()) drawReason = "Stalemate - the player to move has no legal moves.";
+      else if (game.isInsufficientMaterial()) drawReason = "Insufficient material to checkmate.";
+      else if (game.isThreefoldRepetition()) drawReason = "Threefold repetition.";
+      else drawReason = "50-move rule - 50 moves have been made without a pawn move or capture.";
+      
+      return `The game ended in a draw. ${drawReason}`;
+    }
+    if (isResigned) {
+      return isWinner 
+        ? "Your opponent resigned the game." 
+        : "You resigned the game.";
+    }
+    return "The game has ended.";
+  };
+  
+  // Open dialog when game ends if using dialog mode
+  React.useEffect(() => {
+    if (useDialog && (isCheckmate || isDraw || isResigned)) {
+      setDialogOpen(true);
+    }
+  }, [useDialog, isCheckmate, isDraw, isResigned]);
+
+  // Render dialog version if useDialog is true
+  if (useDialog) {
+    return (
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-center text-xl">
+              {getGameTitle()}
+            </DialogTitle>
+            <DialogDescription className="text-center pt-2">
+              <span className="text-lg font-medium">
+                {getGameResult()}
+              </span>
+            </DialogDescription>
+          </DialogHeader>
+          {gameEndTime && (
+            <div className="text-sm text-center text-muted-foreground">
+              Game ended at: {new Date(gameEndTime).toLocaleString()}
+            </div>
+          )}
+          <div className="py-2">
+            <p className="text-center mb-2">What would you like to do next?</p>
+          </div>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.push('/dashboard')}
+              className="w-full sm:w-auto"
+            >
+              Return to Dashboard
+            </Button>
+            <Button
+              type="button"
+              variant="default"
+              onClick={onRematch}
+              className="w-full sm:w-auto bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800"
+            >
+              Play Rematch
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // Otherwise render the original card version
   return (
     <Card className="mt-6 border-2 border-yellow-500 dark:border-yellow-600 shadow-lg">
       <CardHeader className="text-center">

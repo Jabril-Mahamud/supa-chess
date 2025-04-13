@@ -18,12 +18,29 @@ import {
 } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { GameOverMessage } from '@/components/chess/GameOverMessage'; // Import the GameOverMessage component
+import { Chess } from 'chess.js'; // Import chess.js for game logic
 
 export default function GameClient({ gameId, game: initialGame, userId }: GameClientProps) {
   const supabase = createClient();
   const router = useRouter();
   const [game, setGame] = useState<GameData>(initialGame);
   const [subscriptionStatus, setSubscriptionStatus] = useState<string>('');
+  const [chessInstance, setChessInstance] = useState<Chess | null>(null);
+
+  useEffect(() => {
+    // Initialize chess.js instance from current_position (FEN string)
+    if (game.current_position) {
+      try {
+        const chess = new Chess();
+        // Load the current position from the FEN string
+        chess.load(game.current_position);
+        setChessInstance(chess);
+      } catch (err) {
+        console.error("Error initializing chess instance:", err);
+      }
+    }
+  }, [game.current_position]);
 
   useEffect(() => {
     // Fetch fresh data immediately
@@ -97,6 +114,48 @@ export default function GameClient({ gameId, game: initialGame, userId }: GameCl
     }
   };
 
+  // Clean implementation for rematch functionality
+  const handleRematch = async () => {
+    try {
+      console.log("Creating rematch game...");
+      
+      // Create a clean game object matching exactly your schema
+      const rematchGameData = {
+        white_player: game.black_player, // Swap colors
+        black_player: game.white_player, // Swap colors
+        status: 'active' as const,
+        turn: 'w' as const, // White always starts
+        current_position: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1',
+        white_conversion_done: false,
+        black_conversion_done: false,
+        last_conversion: null,
+        winner: null
+      };
+      
+      console.log("Rematch game data:", rematchGameData);
+      
+      const { data, error } = await supabase
+        .from('games')
+        .insert(rematchGameData)
+        .select();
+
+      if (error) {
+        console.error('Failed to create rematch:', error);
+        return;
+      }
+
+      // Navigate to the new game
+      if (data && data[0] && data[0].id) {
+        console.log("Rematch created, navigating to:", data[0].id);
+        router.push(`/game/${data[0].id}`);
+      } else {
+        console.error("No valid game data returned");
+      }
+    } catch (error) {
+      console.error('Rematch creation error:', error);
+    }
+  };
+
   const playerRole = getPlayerRole();
   const canJoin =
     game.status === 'waiting' &&
@@ -107,7 +166,7 @@ export default function GameClient({ gameId, game: initialGame, userId }: GameCl
   const isConnected = subscriptionStatus === 'SUBSCRIBED';
   
   // Helper function to get status badge variant
-  const getStatusBadgeVariant = (status:any) => {
+  const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case 'active':
         return "default";
@@ -125,9 +184,12 @@ export default function GameClient({ gameId, game: initialGame, userId }: GameCl
   };
 
   // Helper function to format status text
-  const formatStatus = (status:any) => {
+  const formatStatus = (status: string) => {
     return status.charAt(0).toUpperCase() + status.slice(1);
   };
+  
+  // Check if game is over
+  const isGameOver = game.status === 'completed' || game.status === 'resigned' || game.status === 'draw';
   
   return (
     <div className="space-y-6">
@@ -217,50 +279,15 @@ export default function GameClient({ gameId, game: initialGame, userId }: GameCl
         </CardContent>
       </Card>
 
-      {/* Show the game over summary when the game is completed/resigned/draw */}
-      {(game.status === 'completed' || game.status === 'resigned' || game.status === 'draw') && (
-        <Card className="border-2 border-yellow-500 dark:border-yellow-600 shadow-lg">
-          <CardHeader className="text-center">
-            <CardTitle>
-              {game.status === 'completed' ? '♚ Game Over - Checkmate! ♚' : 
-               game.status === 'draw' ? '🤝 Game Over - Draw!' :
-               '🏳️ Game Over - Resignation!'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="text-center">
-            {game.winner && (
-              <p className="text-lg font-medium mb-3">
-                {game.winner === userId ? (
-                  <span className="text-green-600 dark:text-green-500">You won!</span>
-                ) : (
-                  <span>Your opponent won.</span>
-                )}
-              </p>
-            )}
-            {game.status === 'draw' && (
-              <p className="text-lg font-medium mb-3">The game ended in a draw.</p>
-            )}
-            <p className="text-muted-foreground mb-4">
-              You can view the final position and moves below.
-            </p>
-          </CardContent>
-          <CardFooter className="flex justify-center gap-4">
-            <Button
-              onClick={() => router.push('/dashboard')}
-              variant="default"
-            >
-              Return to Dashboard
-            </Button>
-            <Button
-              onClick={() => {
-                router.push('/dashboard')
-              }}
-              variant="outline"
-            >
-              Request Rematch
-            </Button>
-          </CardFooter>
-        </Card>
+      {/* Use the GameOverMessage component when the game is over */}
+      {isGameOver && chessInstance && (
+        <GameOverMessage
+          game={chessInstance}
+          gameData={game}
+          currentUserId={userId}
+          onRematch={handleRematch}
+          gameEndTime={game.end_time ?? game.updated_at}
+        />
       )}
 
       {/* Render the chess board for active games or as a read-only display for completed games */}
