@@ -36,24 +36,28 @@ This chess variant includes unique gameplay mechanics:
 ## Installation
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/yourusername/supa-chess.git
    cd supa-chess
    ```
 
 2. Install dependencies:
+
    ```bash
    npm install
    ```
 
 3. Set up environment variables:
    Create a `.env.local` file with your Supabase credentials:
+
    ```
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
 
 4. Run the development server:
+
    ```bash
    npm run dev
    ```
@@ -65,6 +69,7 @@ This chess variant includes unique gameplay mechanics:
 The application uses the following tables in Supabase:
 
 ### `games` Table
+
 - `id`: UUID (primary key)
 - `white_player`: UUID (foreign key to users)
 - `black_player`: UUID (foreign key to users)
@@ -79,6 +84,7 @@ The application uses the following tables in Supabase:
 - `updated_at`: Timestamp
 
 ### `moves` Table
+
 - `id`: UUID (primary key)
 - `game_id`: UUID (foreign key to games)
 - `user_id`: UUID (foreign key to users)
