@@ -51,7 +51,7 @@ This chess variant includes unique gameplay mechanics:
 3. Set up environment variables:
    Create a `.env.local` file with your Supabase credentials:
 
-   ```
+   ```.env.local
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
