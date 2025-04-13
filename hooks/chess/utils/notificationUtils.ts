@@ -1,5 +1,5 @@
+import { GameStateType } from '@/hooks/useChessState';
 import { Dispatch, SetStateAction } from 'react';
-import { GameStateType } from '../useChessState';
 
 /**
  * Show a notification in the game
