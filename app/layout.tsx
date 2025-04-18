@@ -1,4 +1,5 @@
-import HeaderAuth from "@/components/header-auth";
+// app/layout.tsx
+import HeaderAuthProfile from "@/components/header-auth";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { hasEnvVars } from "@/utils/supabase/check-env-vars";
 import { Geist } from "next/font/google";
@@ -53,7 +54,7 @@ export default function RootLayout({
                     </Link>
                     <div className="flex items-center gap-2"></div>
                   </div>
-                  <HeaderAuth />
+                  <HeaderAuthProfile />
                 </div>
               </nav>
               <div className="flex flex-col gap-20 max-w-5xl p-5">
