@@ -1,3 +1,4 @@
+// app/game/[id]/enhanced-game-client.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,7 +9,6 @@ import { GameData, PlayerColor, GameClientProps } from '@/lib/types/Chess';
 import {
   Card,
   CardContent,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -18,8 +18,8 @@ import {
 } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { GameOverMessage } from '@/components/chess/GameOverMessage'; // Import the GameOverMessage component
-import { Chess } from 'chess.js'; // Import chess.js for game logic
+import { GameOverMessage } from '@/components/chess/GameOverMessage'; 
+import { Chess } from 'chess.js'; 
 
 export default function GameClient({ gameId, game: initialGame, userId }: GameClientProps) {
   const supabase = createClient();
@@ -27,6 +27,8 @@ export default function GameClient({ gameId, game: initialGame, userId }: GameCl
   const [game, setGame] = useState<GameData>(initialGame);
   const [subscriptionStatus, setSubscriptionStatus] = useState<string>('');
   const [chessInstance, setChessInstance] = useState<Chess | null>(null);
+  const [whitePlayerUsername, setWhitePlayerUsername] = useState<string | null>(null);
+  const [blackPlayerUsername, setBlackPlayerUsername] = useState<string | null>(null);
 
   useEffect(() => {
     // Initialize chess.js instance from current_position (FEN string)
@@ -81,6 +83,38 @@ export default function GameClient({ gameId, game: initialGame, userId }: GameCl
       supabase.removeChannel(channel);
     };
   }, [gameId, supabase]);
+
+  // Fetch player usernames
+  useEffect(() => {
+    const fetchPlayerUsernames = async () => {
+      // Skip if no players assigned yet
+      if (!game.white_player && !game.black_player) return;
+      
+      // Fetch white player username if exists
+      if (game.white_player) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', game.white_player)
+          .single();
+          
+        setWhitePlayerUsername(data?.username || null);
+      }
+      
+      // Fetch black player username if exists
+      if (game.black_player) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('id', game.black_player)
+          .single();
+          
+        setBlackPlayerUsername(data?.username || null);
+      }
+    };
+    
+    fetchPlayerUsernames();
+  }, [game.white_player, game.black_player, supabase]);
 
   const getPlayerRole = (): PlayerColor | undefined => {
     if (game.white_player === userId) return 'w';
@@ -222,39 +256,36 @@ export default function GameClient({ gameId, game: initialGame, userId }: GameCl
                 </div>
               </div>
             )}
-            {game.status !== 'active' && game.winner && (
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Winner</p>
-                <div className="font-medium">
-                  {game.winner === userId ? (
-                    <Badge variant="default">You</Badge>
-                  ) : (
-                    <Badge variant="secondary">Opponent</Badge>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
           
+          {/* Player information with usernames */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-sm font-medium text-muted-foreground">White Player</p>
               <div className="font-medium">
-                {game.white_player
-                  ? game.white_player === userId
-                    ? 'You'
-                    : 'Opponent'
-                  : 'Waiting...'}
+                {game.white_player ? (
+                  game.white_player === userId ? (
+                    <>You ({whitePlayerUsername || '...'})</>
+                  ) : (
+                    <>{whitePlayerUsername || 'Opponent'}</>
+                  )
+                ) : (
+                  'Waiting...'
+                )}
               </div>
             </div>
             <div>
               <p className="text-sm font-medium text-muted-foreground">Black Player</p>
               <div className="font-medium">
-                {game.black_player
-                  ? game.black_player === userId
-                    ? 'You'
-                    : 'Opponent'
-                  : 'Waiting...'}
+                {game.black_player ? (
+                  game.black_player === userId ? (
+                    <>You ({blackPlayerUsername || '...'})</>
+                  ) : (
+                    <>{blackPlayerUsername || 'Opponent'}</>
+                  )
+                ) : (
+                  'Waiting...'
+                )}
               </div>
             </div>
           </div>
