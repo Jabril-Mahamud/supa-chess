@@ -19,18 +19,7 @@ export default async function LeaderboardPage() {
     console.error("Error fetching top players:", error);
   }
   
-  // Fetch rank distribution
-  const { data: rankDistribution, error: rankError } = await supabase
-    .from('profiles')
-    .select('rank_tier, count')
-    .gt('games_played', 0)
-    .group('rank_tier');
-    
-  if (rankError) {
-    console.error("Error fetching rank distribution:", rankError);
-  }
-  
-  // Create rank distribution info
+  // Create initial rank distribution info
   const rankInfo: RankInfo[] = [
     { name: 'Bronze', count: 0, minElo: 0, maxElo: 1199 },
     { name: 'Silver', count: 0, minElo: 1200, maxElo: 1399 },
@@ -40,10 +29,22 @@ export default async function LeaderboardPage() {
     { name: 'Master', count: 0, minElo: 2000, maxElo: 2199 },
     { name: 'Grandmaster', count: 0, minElo: 2200, maxElo: 3000 }
   ];
+
+  // Fetch rank distribution using a modified query that works with TypeScript
+  const { data: rankDistribution, error: rankError } = await (supabase
+    .from('profiles')
+    .select('rank_tier, count(*)')
+    .gt('games_played', 0) as any)
+    .groupBy('rank_tier');
+  
+  if (rankError) {
+    console.error("Error fetching rank distribution:", rankError);
+  }
   
   // Update counts from actual data
   if (rankDistribution) {
-    rankDistribution.forEach(rank => {
+    // Type-safe iteration with explicit type annotation
+    rankDistribution.forEach((rank: { rank_tier: string; count: number | string }) => {
       const foundRank = rankInfo.find(r => r.name === rank.rank_tier);
       if (foundRank) {
         foundRank.count = Number(rank.count);

@@ -7,7 +7,7 @@ import { ThemeProvider } from "next-themes";
 import Link from "next/link";
 import Image from "next/image";
 import "./globals.css";
-import { BarChart, Linkedin, Chess, Search } from "lucide-react";
+import { BarChart, Linkedin, Search, Crown } from "lucide-react";
 import Logo from "@/public/SupaChessLogo.png";
 
 const defaultUrl = process.env.VERCEL_URL
@@ -43,14 +43,16 @@ export default function RootLayout({
           <main className="min-h-screen flex flex-col items-center">
             <div className="flex-1 w-full flex flex-col gap-20 items-center">
               <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
+                // Updated navigation section in app/layout.tsx // Replace the
+                following section:
                 <div className="w-full max-w-5xl flex justify-between items-center p-3 px-5 text-sm">
                   <div className="flex gap-5 items-center font-semibold">
                     <Link href={"/"} className="flex items-center gap-2">
-                      <Image 
-                        src={Logo} 
-                        alt="Supa Chess Logo" 
-                        width={20} 
-                        height={20} 
+                      <Image
+                        src={Logo}
+                        alt="Supa Chess Logo"
+                        width={20}
+                        height={20}
                         className="w-5 h-5"
                       />
                       Supa Chess
@@ -65,7 +67,8 @@ export default function RootLayout({
                       href="/dashboard"
                       className="text-foreground hover:underline flex items-center gap-1"
                     >
-                      <Chess size={16} /> My Games
+                      <Crown size={16} /> {/* Changed from Chess to Crown */}
+                      My Games
                     </Link>
                     <Link
                       href="/leaderboard"
@@ -86,11 +89,11 @@ export default function RootLayout({
               <footer className="w-full border-t border-t-foreground/10 py-6">
                 <div className="max-w-5xl mx-auto px-5 flex flex-col md:flex-row items-center justify-between gap-4">
                   <div className="flex items-center gap-2">
-                    <Image 
-                      src={Logo} 
-                      alt="Supa Chess Logo" 
-                      width={24} 
-                      height={24} 
+                    <Image
+                      src={Logo}
+                      alt="Supa Chess Logo"
+                      width={24}
+                      height={24}
                       className="w-6 h-6"
                     />
                     <span className="text-sm">

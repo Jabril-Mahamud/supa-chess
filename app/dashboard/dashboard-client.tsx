@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { RankBadge } from '@/components/chess/RankBadge';
 import { 
   Plus, 
-  ChessPiece, 
+  Crown,
   Trophy, 
   Users, 
   Clock,
@@ -96,7 +96,7 @@ export default function DashboardClient({ user, profile }: { user: any, profile:
             <div className="flex flex-col h-full justify-between">
               <div className="space-y-2">
                 <h3 className="font-medium text-lg flex items-center gap-2">
-                  <ChessPiece className="h-5 w-5 text-blue-500" />
+                  <Crown className="h-5 w-5 text-blue-500" /> {/* Changed from ChessPiece to Crown */}
                   Custom Game
                 </h3>
                 <p className="text-sm text-muted-foreground">
@@ -413,7 +413,7 @@ function GameCard({ game, userId }: { game: any, userId: string }) {
               ? <><Users className="h-4 w-4 mr-1" /> Join</>
               : isYourTurn() 
                 ? <><Clock className="h-4 w-4 mr-1" /> Play</> 
-                : <><ChessPiece className="h-4 w-4 mr-1" /> View</>}
+                : <><Crown className="h-4 w-4 mr-1" /> View</>} {/* Changed from ChessPiece to Crown */}
           </Link>
         </Button>
       </CardContent>
