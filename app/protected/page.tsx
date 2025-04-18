@@ -135,14 +135,14 @@ export default async function ProtectedPage() {
                 </div>
               </div>
               
-              <details className="mt-6">
+              {/* <details className="mt-6">
                 <summary className="cursor-pointer text-sm text-muted-foreground hover:text-foreground">
                   Advanced Account Information
                 </summary>
                 <pre className="text-xs font-mono p-3 mt-2 rounded border max-h-64 overflow-auto">
                   {JSON.stringify(user, null, 2)}
                 </pre>
-              </details>
+              </details> */}
             </CardContent>
           </Card>
         </TabsContent>
