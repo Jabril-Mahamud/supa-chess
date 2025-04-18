@@ -11,15 +11,16 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from "@/components/ui/card";
 import {
   Alert,
   AlertDescription,
-} from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+} from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { GameOverMessage } from '@/components/chess/GameOverMessage'; 
 import { Chess } from 'chess.js'; 
+import { updateGameResultWithEloAction } from '@/app/actions';
 
 export default function GameClient({ gameId, game: initialGame, userId }: GameClientProps) {
   const supabase = createClient();
@@ -29,6 +30,8 @@ export default function GameClient({ gameId, game: initialGame, userId }: GameCl
   const [chessInstance, setChessInstance] = useState<Chess | null>(null);
   const [whitePlayerUsername, setWhitePlayerUsername] = useState<string | null>(null);
   const [blackPlayerUsername, setBlackPlayerUsername] = useState<string | null>(null);
+  const [whitePlayerRank, setWhitePlayerRank] = useState<string | null>(null);
+  const [blackPlayerRank, setBlackPlayerRank] = useState<string | null>(null);
 
   useEffect(() => {
     // Initialize chess.js instance from current_position (FEN string)
@@ -55,6 +58,17 @@ export default function GameClient({ gameId, game: initialGame, userId }: GameCl
 
       if (!error && data) {
         setGame(data as GameData);
+        
+        // Update ELO for ranked games that just completed
+        if (data.mode === 'ranked' && 
+            (data.status === 'completed' || data.status === 'draw' || data.status === 'resigned') &&
+            data.white_elo_change === null && 
+            data.black_elo_change === null) {
+          
+          // Call the server action to calculate and update ELO
+          const isDraw = data.status === 'draw';
+          updateGameResultWithEloAction(gameId, data.winner, isDraw);
+        }
       }
     };
 
@@ -84,7 +98,7 @@ export default function GameClient({ gameId, game: initialGame, userId }: GameCl
     };
   }, [gameId, supabase]);
 
-  // Fetch player usernames
+  // Fetch player usernames and ranks
   useEffect(() => {
     const fetchPlayerUsernames = async () => {
       // Skip if no players assigned yet
@@ -94,22 +108,24 @@ export default function GameClient({ gameId, game: initialGame, userId }: GameCl
       if (game.white_player) {
         const { data } = await supabase
           .from('profiles')
-          .select('username')
+          .select('username, rank_tier')
           .eq('id', game.white_player)
           .single();
           
         setWhitePlayerUsername(data?.username || null);
+        setWhitePlayerRank(data?.rank_tier || null);
       }
       
       // Fetch black player username if exists
       if (game.black_player) {
         const { data } = await supabase
           .from('profiles')
-          .select('username')
+          .select('username, rank_tier')
           .eq('id', game.black_player)
           .single();
           
         setBlackPlayerUsername(data?.username || null);
+        setBlackPlayerRank(data?.rank_tier || null);
       }
     };
     
@@ -163,7 +179,8 @@ export default function GameClient({ gameId, game: initialGame, userId }: GameCl
         white_conversion_done: false,
         black_conversion_done: false,
         last_conversion: null,
-        winner: null
+        winner: null,
+        mode: game.mode, // Preserve the game mode from the original game
       };
       
       console.log("Rematch game data:", rematchGameData);
@@ -231,9 +248,16 @@ export default function GameClient({ gameId, game: initialGame, userId }: GameCl
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Game Information</CardTitle>
-            <Badge variant={isConnected ? "default" : "destructive"} className="ml-2">
-              {isConnected ? "Connected" : "Reconnecting..."}
-            </Badge>
+            <div className="flex items-center gap-2">
+              <Badge variant={isConnected ? "default" : "destructive"} className="ml-2">
+                {isConnected ? "Connected" : "Reconnecting..."}
+              </Badge>
+              {game.mode && (
+                <Badge variant={game.mode === 'ranked' ? "default" : "outline"} className="ml-2">
+                  {game.mode === 'ranked' ? 'Ranked' : 'Casual'}
+                </Badge>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -258,16 +282,26 @@ export default function GameClient({ gameId, game: initialGame, userId }: GameCl
             )}
           </div>
           
-          {/* Player information with usernames */}
+          {/* Player information with usernames and ranks */}
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-sm font-medium text-muted-foreground">White Player</p>
               <div className="font-medium">
                 {game.white_player ? (
                   game.white_player === userId ? (
-                    <>You ({whitePlayerUsername || '...'})</>
+                    <div className="flex items-center gap-2">
+                      <span>You ({whitePlayerUsername || '...'})</span>
+                      {whitePlayerRank && game.mode === 'ranked' && (
+                        <Badge variant="outline" className="text-xs">{whitePlayerRank}</Badge>
+                      )}
+                    </div>
                   ) : (
-                    <>{whitePlayerUsername || 'Opponent'}</>
+                    <div className="flex items-center gap-2">
+                      <span>{whitePlayerUsername || 'Opponent'}</span>
+                      {whitePlayerRank && game.mode === 'ranked' && (
+                        <Badge variant="outline" className="text-xs">{whitePlayerRank}</Badge>
+                      )}
+                    </div>
                   )
                 ) : (
                   'Waiting...'
@@ -279,9 +313,19 @@ export default function GameClient({ gameId, game: initialGame, userId }: GameCl
               <div className="font-medium">
                 {game.black_player ? (
                   game.black_player === userId ? (
-                    <>You ({blackPlayerUsername || '...'})</>
+                    <div className="flex items-center gap-2">
+                      <span>You ({blackPlayerUsername || '...'})</span>
+                      {blackPlayerRank && game.mode === 'ranked' && (
+                        <Badge variant="outline" className="text-xs">{blackPlayerRank}</Badge>
+                      )}
+                    </div>
                   ) : (
-                    <>{blackPlayerUsername || 'Opponent'}</>
+                    <div className="flex items-center gap-2">
+                      <span>{blackPlayerUsername || 'Opponent'}</span>
+                      {blackPlayerRank && game.mode === 'ranked' && (
+                        <Badge variant="outline" className="text-xs">{blackPlayerRank}</Badge>
+                      )}
+                    </div>
                   )
                 ) : (
                   'Waiting...'

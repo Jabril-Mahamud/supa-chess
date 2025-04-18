@@ -18,6 +18,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { GameOverMessageProps, GameData } from "@/lib/types/Chess";
+import { formatEloChange } from "@/lib/utils";
 
 interface ExtendedGameOverMessageProps extends GameOverMessageProps {
   gameData?: GameData;
@@ -81,6 +82,17 @@ export function GameOverMessage({
     }
     return "The game has ended.";
   };
+
+  // Check if this was a ranked game with ELO changes
+  const isRankedGame = gameData.mode === 'ranked';
+  
+  // Determine if the current user is white or black
+  const isWhite = currentUserId === gameData.white_player;
+  const isBlack = currentUserId === gameData.black_player;
+  
+  // Get ELO change for current user
+  const userEloChange = isWhite ? gameData.white_elo_change : isBlack ? gameData.black_elo_change : null;
+  const formattedEloChange = formatEloChange(userEloChange);
   
   // Open dialog when game ends if using dialog mode
   React.useEffect(() => {
@@ -109,6 +121,17 @@ export function GameOverMessage({
               Game ended at: {new Date(gameEndTime).toLocaleString()}
             </div>
           )}
+          
+          {/* ELO change for ranked games */}
+          {isRankedGame && userEloChange !== null && (
+            <div className="text-center py-3">
+              <p className="text-sm font-medium">ELO Change</p>
+              <p className={`text-xl font-bold ${formattedEloChange.colorClass}`}>
+                {formattedEloChange.text}
+              </p>
+            </div>
+          )}
+          
           <div className="py-2">
             <p className="text-center mb-2">What would you like to do next?</p>
           </div>
@@ -177,6 +200,16 @@ export function GameOverMessage({
               ) : (
                 <span>You resigned the game.</span>
               )}
+            </p>
+          </div>
+        )}
+        
+        {/* ELO change for ranked games */}
+        {isRankedGame && userEloChange !== null && (
+          <div className="my-4 p-3 bg-accent/20 rounded-lg inline-block">
+            <p className="text-sm font-medium">ELO Change</p>
+            <p className={`text-2xl font-bold ${formattedEloChange.colorClass}`}>
+              {formattedEloChange.text}
             </p>
           </div>
         )}

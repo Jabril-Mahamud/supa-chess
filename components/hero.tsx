@@ -3,6 +3,7 @@ import Image from "next/image";
 import NextLogo from "./next-logo";
 import SupabaseLogo from "./supabase-logo";
 import Logo from "@/public/SupaChessLogo.png"
+import { Trophy, Users, Zap } from "lucide-react";
 
 export default function Hero() {
   return (
@@ -79,17 +80,32 @@ export default function Hero() {
 
         <div className="flex flex-wrap justify-center gap-6 w-full">
           <div className="p-4 border rounded-lg bg-background/50 flex-1 min-w-[200px]">
+            <div className="flex items-center justify-center mb-2">
+              <Zap className="h-5 w-5 text-yellow-500" />
+            </div>
             <h3 className="mb-1 text-lg font-semibold">
-              Real-time Multiplayer
+              Ranked Matchmaking
             </h3>
+            <p className="text-foreground/70 text-sm">
+              Climb the leaderboard with our ELO-based ranking system
+            </p>
+          </div>
+          <div className="p-4 border rounded-lg bg-background/50 flex-1 min-w-[200px]">
+            <div className="flex items-center justify-center mb-2">
+              <Users className="h-5 w-5 text-blue-500" />
+            </div>
+            <h3 className="mb-1 text-lg font-semibold">Real-time Multiplayer</h3>
             <p className="text-foreground/70 text-sm">
               Play with friends with real-time updates
             </p>
           </div>
           <div className="p-4 border rounded-lg bg-background/50 flex-1 min-w-[200px]">
-            <h3 className="mb-1 text-lg font-semibold">Move History</h3>
+            <div className="flex items-center justify-center mb-2">
+              <Trophy className="h-5 w-5 text-purple-500" />
+            </div>
+            <h3 className="mb-1 text-lg font-semibold">Leaderboard</h3>
             <p className="text-foreground/70 text-sm">
-              Track all moves and game events
+              Compete to reach Grandmaster rank
             </p>
           </div>
         </div>
@@ -98,10 +114,10 @@ export default function Hero() {
       {/* CTA Button */}
       <div className="flex flex-wrap gap-4">
         <Link
-          href="/dashboard"
+          href="/matchmaking"
           className="px-8 py-3 text-lg font-medium text-background bg-foreground rounded-md hover:bg-foreground/90 focus:outline-none focus:ring-2 focus:ring-foreground/50"
         >
-          Play Now
+          Find a Match
         </Link>
       </div>
 

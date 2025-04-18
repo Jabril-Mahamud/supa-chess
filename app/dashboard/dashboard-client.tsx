@@ -8,8 +8,18 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { RankBadge } from '@/components/chess/RankBadge';
+import { 
+  Plus, 
+  ChessPiece, 
+  Trophy, 
+  Users, 
+  Clock,
+  Search,
+  Swords
+} from 'lucide-react';
 
-export default function DashboardClient({ user }: { user: any }) {
+export default function DashboardClient({ user, profile }: { user: any, profile: any }) {
   const supabase = createClient();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -27,6 +37,7 @@ export default function DashboardClient({ user }: { user: any }) {
           white_player: isWhite ? user.id : null,
           black_player: isWhite ? null : user.id,
           status: 'waiting',
+          mode: 'casual', // Set default mode to casual for custom games
         })
         .select();
       
@@ -42,15 +53,109 @@ export default function DashboardClient({ user }: { user: any }) {
     }
   };
   
+  // Format rank tier for display
+  const rankTier = profile?.rank_tier || 'Bronze';
+  const eloRating = profile?.elo_rating || 1200;
+  const gamesPlayed = profile?.games_played || 0;
+  const wins = profile?.wins || 0;
+  const losses = profile?.losses || 0;
+  const draws = profile?.draws || 0;
+  
   return (
     <div className="space-y-6">
-      <div>
-        <Button
-          onClick={handleCreateGame}
-          disabled={loading}
-        >
-          {loading ? 'Creating...' : 'Create New Game'}
-        </Button>
+      {/* Featured Action Cards */}
+      <div className="grid gap-4 md:grid-cols-3">
+        {/* Quick Match Card */}
+        <Card className="bg-gradient-to-br from-primary/20 to-primary/5 border-primary/20">
+          <CardContent className="p-6">
+            <div className="flex flex-col h-full justify-between">
+              <div className="space-y-2">
+                <h3 className="font-medium text-lg flex items-center gap-2">
+                  <Search className="h-5 w-5 text-primary" />
+                  Quick Match
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Find an opponent instantly through matchmaking
+                </p>
+              </div>
+              <div className="mt-4 space-y-2">
+                <Button 
+                  onClick={() => router.push('/matchmaking')}
+                  className="w-full"
+                >
+                  Find Match
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Custom Game Card */}
+        <Card>
+          <CardContent className="p-6">
+            <div className="flex flex-col h-full justify-between">
+              <div className="space-y-2">
+                <h3 className="font-medium text-lg flex items-center gap-2">
+                  <ChessPiece className="h-5 w-5 text-blue-500" />
+                  Custom Game
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  Create a custom game and invite friends
+                </p>
+              </div>
+              <div className="mt-4">
+                <Button
+                  onClick={handleCreateGame}
+                  disabled={loading}
+                  variant="outline"
+                  className="w-full"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  {loading ? 'Creating...' : 'Create Game'}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        
+        {/* Rank Status Card */}
+        <Card className="bg-gradient-to-br from-secondary/20 to-secondary/5 border-secondary/20">
+          <CardContent className="p-6">
+            <div className="flex flex-col h-full justify-between">
+              <div className="space-y-2">
+                <h3 className="font-medium text-lg flex items-center gap-2">
+                  <Trophy className="h-5 w-5 text-yellow-500" />
+                  Your Rank
+                </h3>
+                <div className="flex flex-col gap-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Current Rank</span>
+                    <RankBadge rankTier={rankTier} eloRating={eloRating} showElo={true} size="md" />
+                  </div>
+                  
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-muted-foreground">Record</span>
+                    <div className="text-sm">
+                      <span className="text-green-600">{wins}</span>W - 
+                      <span className="text-red-600">{losses}</span>L - 
+                      <span className="text-yellow-500">{draws}</span>D
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4">
+                <Button 
+                  variant="secondary"
+                  className="w-full"
+                  onClick={() => router.push('/leaderboard')}
+                >
+                  <Swords className="mr-2 h-4 w-4" />
+                  View Leaderboard
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
       
       <GamesList userId={user.id} />
@@ -229,11 +334,45 @@ function GameCard({ game, userId }: { game: any, userId: string }) {
   
   const didYouWin = isGameOver && game.winner === userId;
   
+  // Format ELO change for display
+  const getEloChangeDisplay = () => {
+    if (game.mode !== 'ranked' || !isGameOver) return null;
+    
+    let eloChange = 0;
+    
+    if (game.white_player === userId && game.white_elo_change !== null) {
+      eloChange = game.white_elo_change;
+    } else if (game.black_player === userId && game.black_elo_change !== null) {
+      eloChange = game.black_elo_change;
+    } else {
+      return null;
+    }
+    
+    const textColor = eloChange > 0 
+      ? 'text-green-600 dark:text-green-500' 
+      : eloChange < 0 
+        ? 'text-red-600 dark:text-red-500' 
+        : 'text-gray-600 dark:text-gray-400';
+        
+    const sign = eloChange > 0 ? '+' : '';
+    
+    return (
+      <span className={`text-xs font-mono ${textColor}`}>
+        {sign}{eloChange} ELO
+      </span>
+    );
+  };
+  
   return (
     <Card className={`${isYourTurn() ? 'border-green-500 dark:border-green-700' : ''}`}>
       <CardContent className="p-4 flex justify-between items-center">
         <div>
-          <h3 className="font-medium">Game #{game.id.substring(0, 8)}</h3>
+          <h3 className="font-medium flex items-center gap-2">
+            Game #{game.id.substring(0, 8)}
+            {game.mode === 'ranked' && (
+              <Badge variant="secondary" className="text-xs">Ranked</Badge>
+            )}
+          </h3>
           <div className="flex items-center gap-2 my-1">
             <Badge 
               variant={
@@ -253,21 +392,28 @@ function GameCard({ game, userId }: { game: any, userId: string }) {
               <Badge variant="outline">You Won</Badge>
             )}
           </div>
-          <p className="text-sm text-muted-foreground">
-            Playing as {getPlayerRole()}
-            {game.status !== 'waiting' && ' • '}
-            {game.status !== 'waiting' && new Date(game.updated_at).toLocaleDateString()}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm text-muted-foreground">
+              Playing as {getPlayerRole()}
+              {game.status !== 'waiting' && ' • '}
+              {game.status !== 'waiting' && new Date(game.updated_at).toLocaleDateString()}
+            </p>
+            {getEloChangeDisplay()}
+          </div>
         </div>
         
         <Button 
           asChild 
           variant={isYourTurn() ? "default" : "secondary"}
           size="sm"
+          className="gap-1"
         >
           <Link href={`/game/${game.id}`}>
-            {game.status === 'waiting' ? 'Join' : 
-             isYourTurn() ? 'Play' : 'View'}
+            {game.status === 'waiting' 
+              ? <><Users className="h-4 w-4 mr-1" /> Join</>
+              : isYourTurn() 
+                ? <><Clock className="h-4 w-4 mr-1" /> Play</> 
+                : <><ChessPiece className="h-4 w-4 mr-1" /> View</>}
           </Link>
         </Button>
       </CardContent>

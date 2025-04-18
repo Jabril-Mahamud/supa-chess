@@ -7,7 +7,7 @@ import { ThemeProvider } from "next-themes";
 import Link from "next/link";
 import Image from "next/image";
 import "./globals.css";
-import { Linkedin } from "lucide-react";
+import { BarChart, Linkedin, Chess, Search } from "lucide-react";
 import Logo from "@/public/SupaChessLogo.png";
 
 const defaultUrl = process.env.VERCEL_URL
@@ -45,12 +45,33 @@ export default function RootLayout({
               <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16">
                 <div className="w-full max-w-5xl flex justify-between items-center p-3 px-5 text-sm">
                   <div className="flex gap-5 items-center font-semibold">
-                    <Link href={"/"}>Supa Chess</Link>
+                    <Link href={"/"} className="flex items-center gap-2">
+                      <Image 
+                        src={Logo} 
+                        alt="Supa Chess Logo" 
+                        width={20} 
+                        height={20} 
+                        className="w-5 h-5"
+                      />
+                      Supa Chess
+                    </Link>
+                    <Link
+                      href="/matchmaking"
+                      className="text-foreground hover:underline flex items-center gap-1"
+                    >
+                      <Search size={16} /> Find Match
+                    </Link>
                     <Link
                       href="/dashboard"
-                      className="text-foreground hover:underline"
+                      className="text-foreground hover:underline flex items-center gap-1"
                     >
-                      Chess Games
+                      <Chess size={16} /> My Games
+                    </Link>
+                    <Link
+                      href="/leaderboard"
+                      className="text-foreground hover:underline flex items-center gap-1"
+                    >
+                      <BarChart size={16} /> Leaderboard
                     </Link>
                     <div className="flex items-center gap-2"></div>
                   </div>
