@@ -2,6 +2,12 @@ import { createClient } from "@/utils/supabase/server";
 import LeaderboardClient from "./leaderboard-client";
 import { RankInfo } from "@/lib/types/Ranks";
 
+// Define the type for rank distribution data
+type RankDistributionData = {
+  rank_tier: string;
+  count: number | string;
+};
+
 export default async function LeaderboardPage() {
   const supabase = await createClient();
   
@@ -30,14 +36,33 @@ export default async function LeaderboardPage() {
     { name: 'Grandmaster', count: 0, minElo: 2200, maxElo: 3000, percentage: 0 }
   ];
 
-  // Fixed approach: Use a stored procedure or direct SQL query for group by operations
-  const { data: rankDistribution, error: rankError } = await supabase
-    .rpc('get_rank_distribution')
-    .select();
-  
-  // If the RPC doesn't exist yet, fallback to manual counting
-  if (rankError) {
-    console.log("Using fallback method for rank distribution");
+  try {
+    // Use the stored procedure for rank distribution
+    const { data: rankDistribution, error: rankError } = await supabase
+      .rpc('get_rank_distribution');
+    
+    if (rankError) throw rankError;
+      
+    // Process data from the RPC
+    rankDistribution.forEach((rank: RankDistributionData) => {
+      const foundRank = rankInfo.find(r => r.name === rank.rank_tier);
+      if (foundRank) {
+        foundRank.count = Number(rank.count);
+      } else if (rank.rank_tier) {
+        // Handle any new ranks that might be added in the future
+        const defaultEloRange = { minElo: 0, maxElo: 0 };
+        rankInfo.push({
+          name: rank.rank_tier,
+          count: Number(rank.count),
+          minElo: defaultEloRange.minElo,
+          maxElo: defaultEloRange.maxElo,
+          percentage: 0
+        });
+      }
+    });
+  } catch (error) {
+    // Only log the error, no console message about fallback
+    console.error("Error with rank distribution RPC:", error);
     
     // Fetch all profiles with games played for counting
     const { data: allProfiles, error: profilesError } = await supabase
@@ -57,14 +82,6 @@ export default async function LeaderboardPage() {
     } else {
       console.error("Error fetching profiles for rank distribution:", profilesError);
     }
-  } else if (rankDistribution) {
-    // Process data from the RPC if successful
-    rankDistribution.forEach((rank) => {
-      const foundRank = rankInfo.find(r => r.name === rank.rank_tier);
-      if (foundRank) {
-        foundRank.count = Number(rank.count);
-      }
-    });
   }
   
   // Fetch total player count
