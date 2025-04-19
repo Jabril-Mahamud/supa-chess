@@ -1,4 +1,4 @@
-// hooks/chess/useChessGame.ts
+// hooks/useChessGame.ts
 import { useMemo } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { PlayerColor } from '@/lib/types/Chess';
@@ -6,6 +6,7 @@ import { createSquareStyles } from '../hooks/chess/utils/highlightUtils';
 import { useChessState } from './useChessState';
 import { useChessSync } from './useChessSync';
 import { useChessActions } from './useChessActions';
+import { usePlayerPresence } from './usePlayerPresence';
 
 export function useChessGame(
   gameId: string,
@@ -28,6 +29,9 @@ export function useChessGame(
     toggleRematchDialog 
   } = useChessActions(gameId, userId, playerColor, stateManager);
 
+  // Set up player presence tracking
+  const { opponentPresence, rematchAvailable } = usePlayerPresence(gameId, userId);
+
   // Calculate if it's player's turn
   const isPlayerTurn = useMemo(() => {
     return playerColor && gameState.data?.turn === playerColor;
@@ -38,7 +42,7 @@ export function useChessGame(
     return createSquareStyles(gameState.checkHighlight, gameState.checkmateHighlight);
   }, [gameState.checkHighlight, gameState.checkmateHighlight]);
 
-  // Return the same API as the original hook
+  // Return the same API as the original hook, but with presence info
   return {
     game: gameState.chess,
     gameData: gameState.data,
@@ -60,5 +64,8 @@ export function useChessGame(
     blackConversionDone: gameState.blackConversionDone,
     conversionSquare: gameState.conversionSquare,
     lastConversionMessage: gameState.lastConversionMessage,
+    // New properties for presence tracking
+    opponentPresence,
+    rematchAvailable
   };
 }

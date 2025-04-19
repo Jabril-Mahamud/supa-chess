@@ -1,4 +1,4 @@
-// app/game/[id]/enhanced-game-client.tsx
+// app/game/[id]/game-client.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { GameOverMessage } from '@/components/chess/GameOverMessage'; 
 import { Chess } from 'chess.js'; 
 import { updateGameResultWithEloAction } from '@/app/actions';
+import { Clock, UserRoundX } from 'lucide-react';
 
 export default function GameClient({ gameId, game: initialGame, userId }: GameClientProps) {
   const supabase = createClient();
