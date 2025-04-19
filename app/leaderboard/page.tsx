@@ -21,30 +21,45 @@ export default async function LeaderboardPage() {
   
   // Create initial rank distribution info
   const rankInfo: RankInfo[] = [
-    { name: 'Bronze', count: 0, minElo: 0, maxElo: 1199 },
-    { name: 'Silver', count: 0, minElo: 1200, maxElo: 1399 },
-    { name: 'Gold', count: 0, minElo: 1400, maxElo: 1599 },
-    { name: 'Platinum', count: 0, minElo: 1600, maxElo: 1799 },
-    { name: 'Diamond', count: 0, minElo: 1800, maxElo: 1999 },
-    { name: 'Master', count: 0, minElo: 2000, maxElo: 2199 },
-    { name: 'Grandmaster', count: 0, minElo: 2200, maxElo: 3000 }
+    { name: 'Bronze', count: 0, minElo: 0, maxElo: 1199, percentage: 0 },
+    { name: 'Silver', count: 0, minElo: 1200, maxElo: 1399, percentage: 0 },
+    { name: 'Gold', count: 0, minElo: 1400, maxElo: 1599, percentage: 0 },
+    { name: 'Platinum', count: 0, minElo: 1600, maxElo: 1799, percentage: 0 },
+    { name: 'Diamond', count: 0, minElo: 1800, maxElo: 1999, percentage: 0 },
+    { name: 'Master', count: 0, minElo: 2000, maxElo: 2199, percentage: 0 },
+    { name: 'Grandmaster', count: 0, minElo: 2200, maxElo: 3000, percentage: 0 }
   ];
 
-  // Fetch rank distribution using a modified query that works with TypeScript
-  const { data: rankDistribution, error: rankError } = await (supabase
-    .from('profiles')
-    .select('rank_tier, count(*)')
-    .gt('games_played', 0) as any)
-    .groupBy('rank_tier');
+  // Fixed approach: Use a stored procedure or direct SQL query for group by operations
+  const { data: rankDistribution, error: rankError } = await supabase
+    .rpc('get_rank_distribution')
+    .select();
   
+  // If the RPC doesn't exist yet, fallback to manual counting
   if (rankError) {
-    console.error("Error fetching rank distribution:", rankError);
-  }
-  
-  // Update counts from actual data
-  if (rankDistribution) {
-    // Type-safe iteration with explicit type annotation
-    rankDistribution.forEach((rank: { rank_tier: string; count: number | string }) => {
+    console.log("Using fallback method for rank distribution");
+    
+    // Fetch all profiles with games played for counting
+    const { data: allProfiles, error: profilesError } = await supabase
+      .from('profiles')
+      .select('rank_tier')
+      .gt('games_played', 0);
+      
+    if (!profilesError && allProfiles) {
+      // Count manually
+      allProfiles.forEach(profile => {
+        const rankTier = profile.rank_tier || 'Bronze';
+        const foundRank = rankInfo.find(r => r.name === rankTier);
+        if (foundRank) {
+          foundRank.count++;
+        }
+      });
+    } else {
+      console.error("Error fetching profiles for rank distribution:", profilesError);
+    }
+  } else if (rankDistribution) {
+    // Process data from the RPC if successful
+    rankDistribution.forEach((rank) => {
       const foundRank = rankInfo.find(r => r.name === rank.rank_tier);
       if (foundRank) {
         foundRank.count = Number(rank.count);
