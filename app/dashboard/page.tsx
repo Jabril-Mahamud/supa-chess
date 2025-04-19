@@ -2,7 +2,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import DashboardClient from "./dashboard-client";
-import DashboardStats from "@/components/profile/DashboardStats";
 
 export default async function Dashboard() {
   const supabase = await createClient();
@@ -31,12 +30,10 @@ export default async function Dashboard() {
       <h1 className="text-2xl font-bold">Chess Dashboard</h1>
       
       <div className="bg-accent text-sm p-3 px-5 rounded-md text-foreground flex gap-3 items-center">
-        Welcome to your chess dashboard! Here you can create new games or join existing ones.
+        Welcome to your chess dashboard! Here you can create new games, join existing ones, or find opponents through matchmaking.
       </div>
       
-      {profile && <DashboardStats profile={profile} />}
-      
-      <DashboardClient user={user} />
+      <DashboardClient user={user} profile={profile} />
     </div>
   );
 }

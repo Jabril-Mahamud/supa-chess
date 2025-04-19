@@ -6,8 +6,9 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Medal, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { formatEloChange } from "@/lib/utils";
 
 interface RecentGamesProps {
   games: RecentGame[];
@@ -77,10 +78,38 @@ export default function RecentGames({ games, userId }: RecentGamesProps) {
                   >
                     {getGameStatusText(game)}
                   </Badge>
+                  
                   <Badge variant="outline">
                     {game.player_color === 'white' ? 'White' : 'Black'}
                   </Badge>
+                  
+                  {/* Game Mode Badge */}
+                  {game.mode && (
+                    <Badge 
+                      variant={game.mode === 'ranked' ? 'secondary' : 'outline'}
+                      className="flex items-center gap-1"
+                    >
+                      {game.mode === 'ranked' ? (
+                        <>
+                          <Trophy className="h-3 w-3" /> Ranked
+                        </>
+                      ) : (
+                        <>
+                          <Medal className="h-3 w-3" /> Casual
+                        </>
+                      )}
+                    </Badge>
+                  )}
                 </div>
+                
+                {/* Show ELO change for ranked games */}
+                {game.mode === 'ranked' && game.elo_change !== undefined && game.elo_change !== null && (
+                  <div className="text-sm font-medium">
+                    <span className={formatEloChange(game.elo_change).colorClass}>
+                      {formatEloChange(game.elo_change).text} ELO
+                    </span>
+                  </div>
+                )}
                 
                 <div className="text-sm text-muted-foreground">
                   {new Date(game.updated_at).toLocaleDateString()}{' '}
@@ -90,7 +119,9 @@ export default function RecentGames({ games, userId }: RecentGamesProps) {
               
               <Button asChild variant="ghost" size="sm">
                 <Link href={`/game/${game.id}`} className="flex items-center gap-1">
-                  View Game <ChevronRight size={16} />
+                  {game.status === 'waiting' ? 'Join' : 
+                   game.status === 'active' ? 'Play' : 'View'}
+                  <ChevronRight size={16} />
                 </Link>
               </Button>
             </div>

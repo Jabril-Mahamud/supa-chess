@@ -18,6 +18,14 @@ export interface GameData {
   black_conversion_done: boolean;
   last_conversion: string | null;
   end_time?: string | null;
+  
+  // Added missing properties
+  mode?: 'casual' | 'ranked';  // Game mode (casual or ranked)
+  white_elo_change?: number | null;  // ELO change for white player
+  black_elo_change?: number | null;  // ELO change for black player
+  matchmaking_id?: string;  // Reference to matchmaking entry
+  initial_white_elo?: number;  // Initial ELO for white player
+  initial_black_elo?: number;  // Initial ELO for black player
 }
 
 // For compatibility with existing code that uses 'Game' type
@@ -68,7 +76,7 @@ export interface GameInfoProps {
   blackCapturedCount: number;
   whiteConversionDone: boolean;
   blackConversionDone: boolean;
-  lastConversionMessage?: string | null; // Add this new prop
+  lastConversionMessage?: string | null;
 }
 
 export interface GameOverMessageProps {
