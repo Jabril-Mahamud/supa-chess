@@ -8,20 +8,20 @@ import {
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { RankBadge } from "@/components/chess/RankBadge";
 import { 
   Trophy, 
   Award, 
   Swords, 
   Flame, 
-  GraduationCap, // Using GraduationCap instead of ChessKnight
+  GraduationCap,
   Minus, 
   PieChart,
   TrendingUp,
-  TrendingDown,
-  Medal,
-  BarChart
+  BarChart,
+  AlertCircle
 } from 'lucide-react';
-import { getRankColor } from "@/lib/utils";
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ProfileStatsProps {
   profile: Profile;
@@ -73,6 +73,9 @@ export default function ProfileStats({ profile }: ProfileStatsProps) {
     }
   ];
 
+  // Check if player has ranked games
+  const hasRankedGames = (profile.ranked_games_played || 0) > 0;
+
   // New ELO-specific stats to add
   const eloStats = [
     {
@@ -90,31 +93,12 @@ export default function ProfileStats({ profile }: ProfileStatsProps) {
   ];
 
   // Combine all stats
-  const allStats = [...stats, ...eloStats];
-
-  // Calculate progress to next rank
-  const getProgressToNextRank = () => {
-    const elo = profile.elo_rating || 1200;
-    
-    if (elo < 1200) {
-      return { current: elo, max: 1200, nextRank: 'Silver', progress: (elo / 1200) * 100 };
-    } else if (elo < 1400) {
-      return { current: elo - 1200, max: 200, nextRank: 'Gold', progress: ((elo - 1200) / 200) * 100 };
-    } else if (elo < 1600) {
-      return { current: elo - 1400, max: 200, nextRank: 'Platinum', progress: ((elo - 1400) / 200) * 100 };
-    } else if (elo < 1800) {
-      return { current: elo - 1600, max: 200, nextRank: 'Diamond', progress: ((elo - 1600) / 200) * 100 };
-    } else if (elo < 2000) {
-      return { current: elo - 1800, max: 200, nextRank: 'Master', progress: ((elo - 1800) / 200) * 100 };
-    } else if (elo < 2200) {
-      return { current: elo - 2000, max: 200, nextRank: 'Grandmaster', progress: ((elo - 2000) / 200) * 100 };
-    } else {
-      return { current: 0, max: 100, nextRank: 'Top player', progress: 100 };
-    }
-  };
-
-  const rankProgress = getProgressToNextRank();
-  const rankColor = getRankColor(profile.rank_tier || 'Bronze');
+  const allStats = [...stats];
+  
+  // Only add ELO stats if player has played ranked games
+  if (hasRankedGames) {
+    allStats.push(...eloStats);
+  }
 
   return (
     <div className="space-y-6">
@@ -125,18 +109,28 @@ export default function ProfileStats({ profile }: ProfileStatsProps) {
         <div className="flex justify-between items-center mb-4">
           <div>
             <h4 className="text-lg font-semibold">Rank</h4>
-            <Badge className={`text-lg py-1 px-3 mt-1 ${rankColor}`}>
-              {profile.rank_tier || 'Bronze'}
-            </Badge>
+            <RankBadge
+              rankTier={profile.rank_tier}
+              eloRating={profile.elo_rating}
+              gamesPlayed={profile.games_played}
+              rankedGamesPlayed={profile.ranked_games_played}
+              showElo={true}
+              isPlacement={profile.is_placement}
+              placementGamesPlayed={profile.placement_games_played}
+              size="lg"
+            />
           </div>
-          <div className="text-right">
-            <div className="text-sm text-muted-foreground">Current ELO</div>
-            <div className="text-3xl font-bold">{profile.elo_rating || 1200}</div>
-          </div>
+          {hasRankedGames && (
+            <div className="text-right">
+              <div className="text-sm text-muted-foreground">Current ELO</div>
+              <div className="text-3xl font-bold">{profile.elo_rating || 1200}</div>
+            </div>
+          )}
         </div>
         
         {/* Placement matches indicator */}
-        {(profile.is_placement && (profile.placement_games_played || 0) < 10) && (
+        {profile.is_placement && (profile.placement_games_played || 0) < 10 && 
+          (profile.ranked_games_played || 0) > 0 && (
           <div className="mb-3">
             <div className="flex items-center justify-between mb-1">
               <span className="text-sm font-medium">Placement Matches</span>
@@ -146,17 +140,35 @@ export default function ProfileStats({ profile }: ProfileStatsProps) {
           </div>
         )}
         
-        {/* Progress to next rank */}
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-sm font-medium">Progress to {rankProgress.nextRank}</span>
-            <span className="text-xs">{rankProgress.current}/{rankProgress.max}</span>
+        {/* Message for players who haven't played ranked games */}
+        {!hasRankedGames && (
+          <Alert className="mt-3 border-dashed border-muted-foreground/50">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              Play ranked games to earn an ELO rating and rank tier.
+              Complete 10 placement matches to establish your initial ranking.
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {/* Progress to next rank - only show if ranked games played */}
+        {hasRankedGames && profile.rank_tier && profile.rank_tier !== "Grandmaster" && (
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm font-medium">Progress to next rank</span>
+              {profile.elo_rating && (
+                <span className="text-xs font-mono">{getProgressToNextRank(profile.rank_tier, profile.elo_rating)}</span>
+              )}
+            </div>
+            <Progress 
+              value={calculateProgressPercentage(profile.rank_tier, profile.elo_rating || 1200)} 
+              className="h-2" 
+            />
           </div>
-          <Progress value={rankProgress.progress} className="h-2" />
-        </div>
+        )}
       </div>
       
-      {/* Win rate progress bar - Fixed by removing indicatorClassName */}
+      {/* Win rate progress bar */}
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium">Win Rate</span>
@@ -164,13 +176,7 @@ export default function ProfileStats({ profile }: ProfileStatsProps) {
         </div>
         <Progress 
           value={profile.win_rate} 
-          className={`h-2 ${
-            profile.win_rate > 60 
-              ? "bg-green-500" 
-              : profile.win_rate > 40 
-                ? "bg-yellow-500" 
-                : "bg-red-500"
-          }`}
+          className="h-2"
         />
       </div>
       
@@ -236,4 +242,48 @@ export default function ProfileStats({ profile }: ProfileStatsProps) {
       )}
     </div>
   );
+}
+
+// Helper function to calculate progress to next rank
+function getProgressToNextRank(rankTier: string, elo: number): string {
+  switch (rankTier) {
+    case 'Bronze':
+      return `${elo}/1200 to Silver`;
+    case 'Silver':
+      return `${elo - 1200}/200 to Gold`;
+    case 'Gold':
+      return `${elo - 1400}/200 to Platinum`;
+    case 'Platinum':
+      return `${elo - 1600}/200 to Diamond`;
+    case 'Diamond':
+      return `${elo - 1800}/200 to Master`;
+    case 'Master':
+      return `${elo - 2000}/200 to Grandmaster`;
+    case 'Grandmaster':
+      return `${elo} (Max Rank)`;
+    default:
+      return `${elo}/1200 to Silver`;
+  }
+}
+
+// Helper function to calculate percentage progress to next rank
+function calculateProgressPercentage(rankTier: string, elo: number): number {
+  switch (rankTier) {
+    case 'Bronze':
+      return (elo / 1200) * 100;
+    case 'Silver':
+      return ((elo - 1200) / 200) * 100;
+    case 'Gold':
+      return ((elo - 1400) / 200) * 100;
+    case 'Platinum':
+      return ((elo - 1600) / 200) * 100;
+    case 'Diamond':
+      return ((elo - 1800) / 200) * 100;
+    case 'Master':
+      return ((elo - 2000) / 200) * 100;
+    case 'Grandmaster':
+      return 100;
+    default:
+      return 0;
+  }
 }

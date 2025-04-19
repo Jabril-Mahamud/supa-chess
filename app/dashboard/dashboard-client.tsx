@@ -53,13 +53,16 @@ export default function DashboardClient({ user, profile }: { user: any, profile:
     }
   };
   
-  // Format rank tier for display
-  const rankTier = profile?.rank_tier || 'Bronze';
-  const eloRating = profile?.elo_rating || 1200;
+  // Get profile data
+  const rankTier = profile?.rank_tier || null;
+  const eloRating = profile?.elo_rating || null;
   const gamesPlayed = profile?.games_played || 0;
+  const rankedGamesPlayed = profile?.ranked_games_played || 0;
   const wins = profile?.wins || 0;
   const losses = profile?.losses || 0;
   const draws = profile?.draws || 0;
+  const isPlacement = profile?.is_placement || false;
+  const placementGamesPlayed = profile?.placement_games_played || 0;
   
   return (
     <div className="space-y-6">
@@ -96,7 +99,7 @@ export default function DashboardClient({ user, profile }: { user: any, profile:
             <div className="flex flex-col h-full justify-between">
               <div className="space-y-2">
                 <h3 className="font-medium text-lg flex items-center gap-2">
-                  <Crown className="h-5 w-5 text-blue-500" /> {/* Changed from ChessPiece to Crown */}
+                  <Crown className="h-5 w-5 text-blue-500" />
                   Custom Game
                 </h3>
                 <p className="text-sm text-muted-foreground">
@@ -130,7 +133,16 @@ export default function DashboardClient({ user, profile }: { user: any, profile:
                 <div className="flex flex-col gap-1">
                   <div className="flex justify-between items-center">
                     <span className="text-sm text-muted-foreground">Current Rank</span>
-                    <RankBadge rankTier={rankTier} eloRating={eloRating} showElo={true} size="md" />
+                    <RankBadge 
+                      rankTier={rankTier} 
+                      eloRating={eloRating} 
+                      gamesPlayed={gamesPlayed}
+                      rankedGamesPlayed={rankedGamesPlayed}
+                      showElo={true} 
+                      size="md"
+                      isPlacement={isPlacement}
+                      placementGamesPlayed={placementGamesPlayed} 
+                    />
                   </div>
                   
                   <div className="flex justify-between items-center">
@@ -413,7 +425,7 @@ function GameCard({ game, userId }: { game: any, userId: string }) {
               ? <><Users className="h-4 w-4 mr-1" /> Join</>
               : isYourTurn() 
                 ? <><Clock className="h-4 w-4 mr-1" /> Play</> 
-                : <><Crown className="h-4 w-4 mr-1" /> View</>} {/* Changed from ChessPiece to Crown */}
+                : <><Crown className="h-4 w-4 mr-1" /> View</>}
           </Link>
         </Button>
       </CardContent>

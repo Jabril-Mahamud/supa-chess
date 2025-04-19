@@ -1,5 +1,6 @@
 // lib/types/Profile.ts
 export interface Profile {
+  ranked_games_played: number;
   id: string;
   username: string;
   avatar_url: string | null;

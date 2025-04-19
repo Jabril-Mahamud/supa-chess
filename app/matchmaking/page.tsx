@@ -27,10 +27,12 @@ export default async function MatchmakingPage() {
   }
 
   const isNewPlayer = profile?.is_placement ?? true;
-  const placementGames = profile?.placement_games_played ?? 0;
+  const placementGamesPlayed = profile?.placement_games_played ?? 0;
   const eloRating = profile?.elo_rating ?? 1200;
   const highestElo = profile?.highest_elo ?? 1200;
   const rankTier = profile?.rank_tier ?? 'Bronze';
+  const gamesPlayed = profile?.games_played ?? 0;
+  const rankedGamesPlayed = profile?.ranked_games_played ?? 0;
 
   return (
     <div className="flex-1 w-full flex flex-col gap-6 p-4 md:p-8">
@@ -43,10 +45,12 @@ export default async function MatchmakingPage() {
       <MatchmakingClient 
         user={user} 
         isNewPlayer={isNewPlayer}
-        placementGames={placementGames}
+        placementGamesPlayed={placementGamesPlayed}
         eloRating={eloRating}
         highestElo={highestElo}
         rankTier={rankTier}
+        gamesPlayed={gamesPlayed}
+        rankedGamesPlayed={rankedGamesPlayed}
       />
     </div>
   );

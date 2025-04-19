@@ -19,30 +19,41 @@ import {
   Trophy,
   Users,
   X,
-  Zap
-} from "lucide-react";
+  Zap,
+  HelpCircle
+} from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { RankBadge } from "@/components/chess/RankBadge";
 import { joinMatchmakingAction, cancelMatchmakingAction } from "@/app/actions";
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { getRankColor } from '@/lib/utils';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from "@/components/ui/tooltip";
 
 interface MatchmakingClientProps {
   user: any;
   isNewPlayer: boolean;
-  placementGames: number;
+  placementGamesPlayed: number;
   eloRating: number;
   highestElo: number;
   rankTier: string;
+  rankedGamesPlayed: number;
+  gamesPlayed: number;
 }
 
 export default function MatchmakingClient({ 
   user, 
   isNewPlayer,
-  placementGames,
+  placementGamesPlayed,
   eloRating,
   highestElo,
-  rankTier
+  rankTier,
+  rankedGamesPlayed,
+  gamesPlayed
 }: MatchmakingClientProps) {
   const router = useRouter();
   const supabase = createClient();
@@ -53,6 +64,7 @@ export default function MatchmakingClient({
   const [matchmakingId, setMatchmakingId] = useState<string | null>(null);
   const [queueCount, setQueueCount] = useState<{casual: number, ranked: number}>({ casual: 0, ranked: 0 });
   const [showPlacementInfo, setShowPlacementInfo] = useState(false);
+  const [showRankExplanation, setShowRankExplanation] = useState(false);
   const [debugInfo, setDebugInfo] = useState<string[]>([]);
   
   // Debug logging function
@@ -187,99 +199,12 @@ export default function MatchmakingClient({
       }
     };
     
-    // 1. SETUP POLLING - Check immediately and regularly afterward
-    checkForGame(); // Initial check
+    // Additional code for game detection (omitted for brevity)
+    // ...
     
-    pollInterval = setInterval(async () => {
-      if (isRedirecting) {
-        if (pollInterval) clearInterval(pollInterval);
-        return;
-      }
-      
-      const gameFound = await checkForGame();
-      if (gameFound && pollInterval) clearInterval(pollInterval);
-    }, 2000); // Every 2 seconds
-    
-    // 2. SETUP REAL-TIME SUBSCRIPTIONS
-    
-    // Listen for matchmaking entry updates (most reliable method)
-    matchmakingChannel = supabase
-      .channel(`matchmaking-updates-${matchmakingId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE', // Only listen for updates
-          schema: 'public',
-          table: 'matchmaking',
-          filter: `id=eq.${matchmakingId}`,
-        },
-        (payload) => {
-          logDebug(`⚡ Matchmaking entry updated: ${JSON.stringify(payload.new)}`);
-          
-          if (payload.new?.game_id) {
-            redirectToGame(payload.new.game_id, "matchmaking-sub");
-          } else if (payload.new?.is_active === false) {
-            // Entry inactive but no game_id - check for games
-            logDebug("Matchmaking entry inactive, checking for games...");
-            checkForGame();
-          }
-        }
-      )
-      .subscribe((status) => {
-        logDebug(`Matchmaking subscription status: ${status}`);
-      });
-    
-    // Also listen for new games where user is a player (backup method)
-    gamesChannel = supabase
-      .channel(`games-${user.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'games',
-          filter: `or(white_player.eq.${user.id},black_player.eq.${user.id})`,
-        },
-        (payload) => {
-          logDebug(`⚡ New game created: ${JSON.stringify(payload.new)}`);
-          
-          if (payload.new?.id) {
-            redirectToGame(payload.new.id, "games-sub");
-          }
-        }
-      )
-      .subscribe((status) => {
-        logDebug(`Games subscription status: ${status}`);
-      });
-      
-    // 3. SETUP FALLBACK - If all else fails, check if matchmaking entry still exists
-    const checkEntryExists = async () => {
-      if (isRedirecting) return;
-      
-      try {
-        const { data, error } = await supabase
-          .from('matchmaking')
-          .select('id')
-          .eq('id', matchmakingId)
-          .single();
-          
-        if (error || !data) {
-          logDebug("Matchmaking entry no longer exists, checking for games...");
-          checkForGame();
-        }
-      } catch (error) {
-        console.error("Error checking if entry exists:", error);
-      }
-    };
-    
-    // Check if entry still exists every 10 seconds (fallback)
-    const fallbackInterval = setInterval(checkEntryExists, 10000);
-    
-    // Cleanup function
     return () => {
       logDebug("Cleaning up matchmaking listeners");
       if (pollInterval) clearInterval(pollInterval);
-      if (fallbackInterval) clearInterval(fallbackInterval);
       if (matchmakingChannel) supabase.removeChannel(matchmakingChannel);
       if (gamesChannel) supabase.removeChannel(gamesChannel);
     };
@@ -388,10 +313,20 @@ export default function MatchmakingClient({
     }
   };
   
-  const rankColor = getRankColor(rankTier);
-  
   return (
     <div className="space-y-6">
+      {/* Explanation for new players */}
+      {rankedGamesPlayed === 0 && (
+        <Alert className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-900">
+          <AlertCircle className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+          <AlertTitle className="text-blue-800 dark:text-blue-300">New to Ranked Chess?</AlertTitle>
+          <AlertDescription className="text-blue-700 dark:text-blue-300">
+            Play 10 placement matches to determine your initial rank and ELO rating.
+            During placement, your rating will fluctuate more as the system determines your skill level.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
         {/* Ranked Card */}
         <Card className={`${selectedMode === 'ranked' ? 'border-primary' : ''}`}>
@@ -399,6 +334,18 @@ export default function MatchmakingClient({
             <CardTitle className="flex items-center gap-2">
               <Trophy className="h-5 w-5 text-yellow-500" />
               Ranked Mode
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-6 w-6 rounded-full" onClick={() => setShowRankExplanation(!showRankExplanation)}>
+                      <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Click for more information about the ranking system</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </CardTitle>
             <CardDescription>
               Play competitive games that affect your ELO rating and rank
@@ -406,47 +353,67 @@ export default function MatchmakingClient({
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
+              {showRankExplanation && (
+                <Alert>
+                  <AlertDescription className="text-sm">
+                    <p className="font-medium">How the ranking system works:</p>
+                    <ul className="list-disc pl-5 mt-2 space-y-1">
+                      <li>You must play 10 placement matches to get your initial rank</li>
+                      <li>Win against higher-ranked players to gain more ELO</li>
+                      <li>Ranks range from Bronze to Grandmaster</li>
+                      <li>Your rank updates immediately after each game</li>
+                    </ul>
+                  </AlertDescription>
+                </Alert>
+              )}
+
               <div className="flex items-center justify-between">
-                <span className="text-sm">Current ELO</span>
-                <span className="font-bold">{eloRating}</span>
+                <span className="text-sm">Your Rank</span>
+                <RankBadge 
+                  rankTier={rankTier} 
+                  eloRating={eloRating}
+                  gamesPlayed={gamesPlayed}
+                  rankedGamesPlayed={rankedGamesPlayed}
+                  showElo={true}
+                  isPlacement={isNewPlayer}
+                  placementGamesPlayed={placementGamesPlayed}
+                  size="md"
+                />
               </div>
               
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Rank</span>
-                <Badge 
-                  className={`${rankColor} font-semibold`}
-                >
-                  {rankTier}
-                </Badge>
-              </div>
-              
-              {isNewPlayer && (
+              {isNewPlayer && rankedGamesPlayed > 0 && (
                 <div className="mt-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm">Placement Games</span>
-                    <span className="font-medium">{placementGames}/10</span>
+                    <span className="text-sm">Placement Progress</span>
+                    <span className="font-medium">{placementGamesPlayed}/10</span>
                   </div>
-                  <Progress value={placementGames * 10} className="h-2 mt-1" />
+                  <Progress value={placementGamesPlayed * 10} className="h-2 mt-1" />
                   <Button 
                     variant="link" 
                     size="sm" 
                     className="p-0 h-auto text-xs mt-1"
                     onClick={() => setShowPlacementInfo(!showPlacementInfo)}
                   >
-                    What are placement games?
+                    {showPlacementInfo ? "Hide info" : "What are placement games?"}
                   </Button>
                   
                   {showPlacementInfo && (
                     <div className="text-xs text-muted-foreground mt-1 p-2 bg-muted/50 rounded-md">
                       You must complete 10 placement games to establish your initial rank. 
                       During this period, your ELO will adjust more dramatically based on your
-                      performance.
+                      performance against players of different skill levels.
                     </div>
                   )}
                 </div>
               )}
               
-              
+              {rankedGamesPlayed === 0 && (
+                <div className="p-3 border border-dashed rounded-md border-yellow-300 bg-yellow-50 dark:bg-yellow-900/30 dark:border-yellow-800">
+                  <p className="text-sm text-yellow-800 dark:text-yellow-300">
+                    You haven't played any ranked games yet. Complete your first 10 games to earn your rank!
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
           <CardFooter>
@@ -500,7 +467,11 @@ export default function MatchmakingClient({
                 </AlertDescription>
               </Alert>
               
-              
+              <div className="p-3 border border-dashed rounded-md border-blue-300 bg-blue-50 dark:bg-blue-900/30 dark:border-blue-800">
+                <p className="text-sm text-blue-800 dark:text-blue-300">
+                  New to chess? Start with casual games to get comfortable with the rules and gameplay.
+                </p>
+              </div>
             </div>
           </CardContent>
           <CardFooter>

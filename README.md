@@ -1,23 +1,30 @@
 # Supa Chess
 
-A real-time multiplayer chess application with a unique twist built with Next.js, React, and Supabase.
+A real-time multiplayer chess application with unique game mechanics built with Next.js, React, and Supabase.
+
+![Supa Chess Logo](./public/SupaChessLogo.png)
 
 ## Features
 
 - **Real-time Multiplayer Chess**: Play chess with others in real-time using Supabase's real-time capabilities
+- **Ranked & Casual Matchmaking**: Find opponents through an ELO-based matchmaking system
 - **Special "Conversion" Rule**: When a player loses 8 pieces, they can convert one random enemy piece to their side (excluding the king)
 - **Turn Skipping**: Strategic option to skip a turn
 - **Move History**: Complete history of all moves made in the game
 - **Game State Persistence**: Games are saved in the database and can be resumed
 - **Spectator Mode**: Watch games without participating
+- **Player Profiles**: Track your stats, ELO rating, and rank
+- **Leaderboard**: See how you stack up against other players
 
 ## Tech Stack
 
-- **Frontend**: Next.js, React, TypeScript
-- **UI Components**: Custom chess board using react-chessboard
+- **Frontend**: Next.js 14, React, TypeScript
+- **UI Components**: Shadcn UI with custom chess board using react-chessboard
 - **Game Logic**: chess.js for move validation and game state management
 - **Backend/Database**: Supabase (PostgreSQL)
-- **Real-time Communication**: Supabase Realtime
+- **Authentication**: Supabase Auth with email/password and OAuth providers
+- **Real-time Communication**: Supabase Realtime for game state and presence
+- **Styling**: Tailwind CSS for responsive design
 
 ## Special Rules
 
@@ -51,7 +58,7 @@ This chess variant includes unique gameplay mechanics:
 3. Set up environment variables:
    Create a `.env.local` file with your Supabase credentials:
 
-   ```.env.local
+   ```env
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
@@ -64,42 +71,49 @@ This chess variant includes unique gameplay mechanics:
 
 5. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Database Schema
+## Setting Up the Database
 
-The application uses the following tables in Supabase:
+Supa Chess requires several tables and RLS (Row Level Security) policies in Supabase. For detailed instructions on setting up the database, see [Database.md](./Database.md).
 
-### `games` Table
+## Project Structure
 
-- `id`: UUID (primary key)
-- `white_player`: UUID (foreign key to users)
-- `black_player`: UUID (foreign key to users)
-- `current_position`: String (FEN notation)
-- `turn`: String ('w' or 'b')
-- `status`: String ('active', 'completed', 'draw', 'resigned')
-- `winner`: UUID (foreign key to users, nullable)
-- `white_conversion_done`: Boolean
-- `black_conversion_done`: Boolean
-- `last_conversion`: String (nullable)
-- `created_at`: Timestamp
-- `updated_at`: Timestamp
+```text
+supa-chess/
+├── app/ - Next.js app router pages and layouts
+│   ├── actions.ts - Server actions for auth and game actions
+│   ├── auth/ - Authentication callback handling
+│   ├── dashboard/ - User dashboard
+│   ├── game/ - Game page and components
+│   ├── leaderboard/ - Leaderboard page
+│   ├── matchmaking/ - Matchmaking page
+│   └── protected/ - Protected routes
+├── components/ - Reusable React components
+│   ├── chess/ - Chess-specific components
+│   ├── profile/ - User profile components
+│   └── ui/ - UI components from shadcn
+├── hooks/ - Custom React hooks
+│   ├── chess/ - Chess game logic hooks
+│   └── usePlayerPresence.ts - Player online status tracking
+├── lib/ - Utility functions and types
+│   └── types/ - TypeScript type definitions
+├── public/ - Static assets
+└── utils/ - Helper utilities
+    └── supabase/ - Supabase client utilities
+```
 
-### `moves` Table
+## Key Components
 
-- `id`: UUID (primary key)
-- `game_id`: UUID (foreign key to games)
-- `user_id`: UUID (foreign key to users)
-- `move_notation`: String
-- `position_after`: String (FEN notation)
-- `created_at`: Timestamp
+### Game System
 
-## Component Architecture
+- **ChessBoard**: Main component for the chess board UI and game logic
+- **useChessGame**: Custom hook managing game state, rules, and synchronization
+- **matchmaking system**: Pairs players based on ELO rating and availability
 
-The main chess component is composed of:
+### Database Integration
 
-- `ChessBoard`: Main component for the chessboard UI and game logic
-- Supabase client for real-time communication and database access
-- react-chessboard for visual representation
-- chess.js for move validation and game state tracking
+- **Supabase Realtime**: Used for synchronizing game state between players
+- **RLS Policies**: Ensure secure access to game data
+- **Server Actions**: Handle database operations securely
 
 ## Contributing
 
@@ -119,3 +133,4 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - [chess.js](https://github.com/jhlywa/chess.js) for chess logic
 - [Supabase](https://supabase.com) for backend and real-time capabilities
 - [Next.js](https://nextjs.org) for the React framework
+- [shadcn/ui](https://ui.shadcn.com) for UI components
