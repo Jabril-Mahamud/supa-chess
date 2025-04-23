@@ -1,20 +1,20 @@
+// components/layout/Navbar.tsx
 import Link from "next/link";
 import Image from "next/image";
 import { Search, LayoutGrid, TrendingUp } from "lucide-react";
 import HeaderAuthProfile from "@/components/header-auth";
 import Logo from "@/public/SupaChessLogo.png";
-import { createClient } from "@/utils/supabase/client";
+import { createClient } from "@/utils/supabase/server"; // Changed from client to server
 
 export default async function Navbar() {
-  const supabase = createClient();
+  const supabase = await createClient(); // Add await here
   
   const { data: { user }, error: userError } = await supabase.auth.getUser();
   
   // Define nav links - My Games is conditionally included based on authentication
   const NAV_LINKS = [
-    { href: "/matchmaking", label: "Find Match", icon: Search },
     // Only include My Games if user is authenticated
-    ...(user ? [{ href: "/dashboard", label: "My Games", icon: LayoutGrid }] : []),
+    ...(user ? [{ href: "/matchmaking", label: "Find Match", icon: Search }] : []),
     { href: "/leaderboard", label: "Leaderboard", icon: TrendingUp },
   ];
 

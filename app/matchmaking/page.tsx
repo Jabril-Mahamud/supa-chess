@@ -1,3 +1,4 @@
+// app/matchmaking/page.tsx (updated)
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 import MatchmakingClient from "./matchmaking-client";
@@ -36,14 +37,15 @@ export default async function MatchmakingPage() {
 
   return (
     <div className="flex-1 w-full flex flex-col gap-6 p-4 md:p-8">
-      <h1 className="text-2xl font-bold">Find a Match</h1>
+      <h1 className="text-2xl font-bold">Game Hub</h1>
       
       <div className="bg-accent text-sm p-3 px-5 rounded-md text-foreground flex gap-3 items-center">
-        Choose between Casual and Ranked mode. In Ranked mode, your ELO rating will be affected by the outcome of the game.
+        Find matches and manage your existing games all in one place.
       </div>
       
       <MatchmakingClient 
         user={user} 
+        profile={profile}
         isNewPlayer={isNewPlayer}
         placementGamesPlayed={placementGamesPlayed}
         eloRating={eloRating}
