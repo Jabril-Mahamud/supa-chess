@@ -1,4 +1,3 @@
-// app/matchmaking/matchmaking-client.tsx (updated)
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -340,7 +339,55 @@ export default function MatchmakingClient({
         )}
 
         <div className="grid gap-6 grid-cols-1 md:grid-cols-2">
-          {/* Ranked Card */}
+          {/* Casual Card - Moved to first position */}
+          <Card className={`${selectedMode === 'casual' ? 'border-primary' : ''}`}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Medal className="h-5 w-5 text-blue-500" /> 
+                Casual Mode
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <Alert>
+                  <AlertDescription>
+                    Casual games do not affect your ELO rating or rank. Perfect for trying new strategies or just having fun!
+                  </AlertDescription>
+                </Alert>
+                
+                {isSearching && selectedMode === 'casual' ? (
+                  <div className="w-full">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium flex items-center gap-1">
+                        <Clock size={16} /> Searching for {formatTime(searchTime)}
+                      </span>
+                      <Badge variant="outline" className="animate-pulse">
+                        Finding opponent...
+                      </Badge>
+                    </div>
+                    <Button 
+                      variant="destructive" 
+                      className="w-full"
+                      onClick={handleCancel}
+                    >
+                      <X className="mr-2 h-4 w-4" /> Cancel Search
+                    </Button>
+                  </div>
+                ) : (
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => handleJoinQueue('casual')}
+                    disabled={isSearching}
+                  >
+                    <Users className="mr-2 h-4 w-4" /> Find Casual Match
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+          
+          {/* Ranked Card - Moved to second position */}
           <Card className={`${selectedMode === 'ranked' ? 'border-primary' : ''}`}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -410,54 +457,6 @@ export default function MatchmakingClient({
               </div>
             </CardContent>
           </Card>
-          
-          {/* Casual Card */}
-          <Card className={`${selectedMode === 'casual' ? 'border-primary' : ''}`}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Medal className="h-5 w-5 text-blue-500" /> 
-                Casual Mode
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Alert>
-                  <AlertDescription>
-                    Casual games do not affect your ELO rating or rank. Perfect for trying new strategies or just having fun!
-                  </AlertDescription>
-                </Alert>
-                
-                {isSearching && selectedMode === 'casual' ? (
-                  <div className="w-full">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium flex items-center gap-1">
-                        <Clock size={16} /> Searching for {formatTime(searchTime)}
-                      </span>
-                      <Badge variant="outline" className="animate-pulse">
-                        Finding opponent...
-                      </Badge>
-                    </div>
-                    <Button 
-                      variant="destructive" 
-                      className="w-full"
-                      onClick={handleCancel}
-                    >
-                      <X className="mr-2 h-4 w-4" /> Cancel Search
-                    </Button>
-                  </div>
-                ) : (
-                  <Button 
-                    variant="outline" 
-                    className="w-full"
-                    onClick={() => handleJoinQueue('casual')}
-                    disabled={isSearching}
-                  >
-                    <Users className="mr-2 h-4 w-4" /> Find Casual Match
-                  </Button>
-                )}
-              </div>
-            </CardContent>
-          </Card>
         </div>
         
         {/* Custom Game Option */}
@@ -491,133 +490,134 @@ export default function MatchmakingClient({
         <div className="space-y-4">
           <h2 className="text-xl font-semibold mb-4">Your Games</h2>
           
-          <Tabs defaultValue="active" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-4">
-              <TabsTrigger value="active">
-                Active Games
-                {activeGames.length > 0 && (
-                  <Badge variant="secondary" className="ml-2">{activeGames.length}</Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="completed">
-                Completed Games
-                {completedGames.length > 0 && (
-                  <Badge variant="secondary" className="ml-2">{completedGames.length}</Badge>
-                )}
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="active" className="mt-0">
-              {activeGames.length === 0 ? (
-                <Card>
-                  <CardContent className="pt-6">
-                    You don't have any active games. Create a new game or find a match to start playing!
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="grid gap-4">
-                  {activeGames.map((game) => (
-                    <Card key={game.id} className={`${isYourTurn(game) ? 'border-green-500 dark:border-green-700' : ''}`}>
-                      <CardContent className="p-4 flex justify-between items-center">
-                        <div>
-                          <h3 className="font-medium flex items-center gap-2">
-                            Game #{game.id.substring(0, 8)}
-                            {game.mode === 'ranked' && (
-                              <Badge variant="secondary" className="text-xs">Ranked</Badge>
-                            )}
-                          </h3>
-                          <div className="flex items-center gap-2 my-1">
-                            <Badge 
-                              variant={
-                                game.status === 'waiting' ? 'secondary' : 
-                                game.status === 'active' ? 'default' :
-                                'outline'
-                              }
-                            >
-                              {getGameStatus(game)}
-                            </Badge>
-                            
-                            {isYourTurn(game) && (
-                              <Badge variant="default" className="animate-pulse">Your Turn</Badge>
-                            )}
+          {/* Merged active and completed games display */}
+          {games.length === 0 ? (
+            <Card>
+              <CardContent className="pt-6">
+                You don't have any games yet. Create a new game or find a match to start playing!
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-5">
+              {/* Active Games Section */}
+              {activeGames.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-base font-medium text-primary">Active Games</h3>
+                  <div className="grid gap-3">
+                    {activeGames.map((game) => (
+                      <Card 
+                        key={game.id} 
+                        className={`
+                          ${isYourTurn(game) ? 
+                            'border-green-500 dark:border-green-700 shadow-[0_0_8px_rgba(34,197,94,0.5)] dark:shadow-[0_0_8px_rgba(21,128,61,0.5)]' : ''}
+                            transition-all duration-300
+                        `}
+                      >
+                        <CardContent className="p-4 flex justify-between items-center">
+                          <div>
+                            <h3 className="font-medium flex items-center gap-2">
+                              Game #{game.id.substring(0, 8)}
+                              {game.mode === 'ranked' && (
+                                <Badge variant="secondary" className="text-xs">Ranked</Badge>
+                              )}
+                            </h3>
+                            <div className="flex items-center gap-2 my-1">
+                              <Badge 
+                                variant={
+                                  game.status === 'waiting' ? 'secondary' : 
+                                  game.status === 'active' ? 'default' :
+                                  'outline'
+                                }
+                              >
+                                {getGameStatus(game)}
+                              </Badge>
+                              
+                              {isYourTurn(game) && (
+                                <Badge variant="default" className="animate-pulse">Your Turn</Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              Playing as {getPlayerRole(game)}
+                              {game.status !== 'waiting' && ' • '}
+                              {game.status !== 'waiting' && new Date(game.updated_at).toLocaleDateString()}
+                            </p>
                           </div>
-                          <p className="text-sm text-muted-foreground">
-                            Playing as {getPlayerRole(game)}
-                            {game.status !== 'waiting' && ' • '}
-                            {game.status !== 'waiting' && new Date(game.updated_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        
-                        <Button 
-                          asChild 
-                          variant={isYourTurn(game) ? "default" : "secondary"}
-                          size="sm"
-                          className="gap-1"
-                        >
-                          <Link href={`/game/${game.id}`}>
-                            {game.status === 'waiting' 
-                              ? 'Join'
-                              : isYourTurn(game) 
-                                ? 'Play' 
-                                : 'View'}
-                          </Link>
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ))}
+                          
+                          <Button 
+                            asChild 
+                            variant={isYourTurn(game) ? "default" : "secondary"}
+                            size="sm"
+                            className="gap-1"
+                          >
+                            <Link href={`/game/${game.id}`}>
+                              {game.status === 'waiting' 
+                                ? 'Join'
+                                : isYourTurn(game) 
+                                  ? 'Play' 
+                                  : 'View'}
+                            </Link>
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
                 </div>
               )}
-            </TabsContent>
-            
-            <TabsContent value="completed" className="mt-0">
-              {completedGames.length === 0 ? (
-                <Card>
-                  <CardContent className="pt-6">
-                    You don't have any completed games yet.
-                  </CardContent>
-                </Card>
-              ) : (
-                <div className="grid gap-4">
-                  {completedGames.map((game) => (
-                    <Card key={game.id}>
-                      <CardContent className="p-4 flex justify-between items-center">
-                        <div>
-                          <h3 className="font-medium flex items-center gap-2">
-                            Game #{game.id.substring(0, 8)}
-                            {game.mode === 'ranked' && (
-                              <Badge variant="secondary" className="text-xs">Ranked</Badge>
-                            )}
-                          </h3>
-                          <div className="flex items-center gap-2 my-1">
-                            <Badge variant="outline">
-                              {getGameStatus(game)}
-                            </Badge>
-                            
-                            {game.winner === user.id && (
-                              <Badge variant="outline">You Won</Badge>
-                            )}
+
+              {/* Completed Games Section */}
+              {completedGames.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="text-base font-medium text-muted-foreground mt-4">Completed Games</h3>
+                  <div className="grid gap-3">
+                    {completedGames.map((game) => (
+                      <Card key={game.id} className="opacity-90">
+                        <CardContent className="p-4 flex justify-between items-center">
+                          <div>
+                            <h3 className="font-medium flex items-center gap-2">
+                              Game #{game.id.substring(0, 8)}
+                              {game.mode === 'ranked' && (
+                                <Badge variant="secondary" className="text-xs">Ranked</Badge>
+                              )}
+                            </h3>
+                            <div className="flex items-center gap-2 my-1">
+                              <Badge variant="outline">
+                                {getGameStatus(game)}
+                              </Badge>
+                              
+                              {game.winner === user.id && (
+                                <Badge variant="outline" className="bg-green-100 dark:bg-green-900">Won</Badge>
+                              )}
+
+                              {game.winner && game.winner !== user.id && (
+                                <Badge variant="outline" className="bg-red-100 dark:bg-red-900">Lost</Badge>
+                              )}
+
+                              {game.status === 'draw' && (
+                                <Badge variant="outline" className="bg-yellow-100 dark:bg-yellow-900">Draw</Badge>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              Played as {getPlayerRole(game)} • {new Date(game.updated_at).toLocaleDateString()}
+                            </p>
                           </div>
-                          <p className="text-sm text-muted-foreground">
-                            Played as {getPlayerRole(game)} • {new Date(game.updated_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        
-                        <Button 
-                          asChild 
-                          variant="secondary"
-                          size="sm"
-                        >
-                          <Link href={`/game/${game.id}`}>
-                            View
-                          </Link>
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  ))}
+                          
+                          <Button 
+                            asChild 
+                            variant="secondary"
+                            size="sm"
+                          >
+                            <Link href={`/game/${game.id}`}>
+                              View
+                            </Link>
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
                 </div>
               )}
-            </TabsContent>
-          </Tabs>
+            </div>
+          )}
         </div>
       </TabsContent>
     </Tabs>
